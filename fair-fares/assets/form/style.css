@@ -171,3 +171,8 @@ select { text-overflow: ellipsis; }
   table.results details table.results tr { display: flex; justify-content: space-between; padding: 2px 0; border: 0; }
   table.results details table.results td { width: auto; }
 }
+/* stepper: hug its content, keep the focus ring inside the rounded box */
+.stepper { align-self: flex-start; width: auto; }
+.stepper button:focus-visible { outline-offset: -3px; border-radius: 9px; }
+.stepper button:hover { background: var(--accent-soft); }
+.stepper output { padding: 0 6px; }
