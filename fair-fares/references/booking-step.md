@@ -1,6 +1,6 @@
 # Booking hand-off ("Take me to booking")
 
-Trigger: a `book` event (`wait_event.py --types book`) with `option_id`. Find the row in `RUN/all_options.csv`.
+Trigger: a `book` event (`wait_event.py --types book`) with `option_id`, or, when `unattended.handoff` is `top1`, the #1 pick right after results are ready. Find the row in `RUN/all_options.csv`.
 
 1. Write `RUN/booking_status.json` → `{"option_id", "message": "Opening Skyscanner…", "at"}`; update it at each step (the page shows it).
 2. With the agent's browser plugin (see setup-and-portability.md; fallback Playwright MCP in a visible browser):

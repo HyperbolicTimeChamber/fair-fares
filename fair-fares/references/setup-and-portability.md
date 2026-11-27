@@ -32,7 +32,7 @@ The Grok Build CLI flags (`grok -m … -p …`) and the Codex small-model name (
 
 ## Install commands shown to the user
 
-`setup_check.py` returns them per agent in `install.commands` / `install.manual`. Show them verbatim, wait for approval, run, re-check with `--refresh`. Things that need the user's click (Chrome Web Store, marketplace plugins, account connectors) are never "run": give the link and wait.
+`setup_check.py` returns them per agent in `install.commands` / `install.manual`, plus a `plain` one-line description. Explain each item to the user with `plain`, get approval, run the commands yourself, re-check with `--refresh`. Show the commands only if the user asks to see them. Things that need the user's click (Chrome Web Store, marketplace plugins, account connectors) are never "run": give the link and wait.
 
 - Playwright (Python): `python3 -m pip install --user playwright` then `python3 -m playwright install chromium`. On Linux/Homebrew Python with PEP 668, pip may need `--break-system-packages` or a venv; ask which the user prefers.
 - Playwright MCP (Claude Code): `claude mcp add playwright -- npx @playwright/mcp@latest`; Codex: `codex mcp add playwright -- npx @playwright/mcp@latest`; Gemini: `gemini mcp add playwright npx @playwright/mcp@latest`. MCP changes need an agent restart; tell the user.

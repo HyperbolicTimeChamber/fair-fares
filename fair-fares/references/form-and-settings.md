@@ -32,7 +32,14 @@ Server API (POSTs need header `X-Fair-Fares: 1`): `GET /api/settings`, `POST /ap
     "buffer": {"style": "relaxed|standard|extra|custom", "custom_minutes"},
     "currency", "miles", "railcards", "insurance": "yes|no",
     "hotels": {"enabled","budget","min_rating","must_haves"},
-    "enter_details": bool    // may enter names/contact for top 3, after asking each time; never passport/payment
+    "enter_details": bool    // may enter names/contact for top 3; unattended = approved for this run, else ask each time; never passport/payment
+  },
+  "unattended": {            // see unattended.md
+    "enabled": bool,         // true = no questions after Start search
+    "previous_run": "fresh|reuse",
+    "new_documents": "add|list",
+    "blocked_sites": "skip",
+    "handoff": "wait|top1"
   }
 }
 ```

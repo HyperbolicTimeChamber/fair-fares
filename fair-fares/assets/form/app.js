@@ -19,6 +19,7 @@ const DEFAULTS = () => ({
   prefs: { cabin: "economy", bags: 1, max_stops: 2, max_hours_each_way: "", avoid: { overnight_layovers: false, early_departures: false },
     fare_flex: "cheapest", buffer: { style: "standard", custom_minutes: 120 }, currency: "", currency_auto: true,
     miles: "", railcards: "", insurance: "no", hotels: { enabled: false, budget: "", min_rating: "", must_haves: "" }, enter_details: false },
+  unattended: { enabled: true, previous_run: "fresh", new_documents: "add", blocked_sites: "skip", handoff: "wait" },
 });
 
 async function api(path, body) {
@@ -345,6 +346,10 @@ function setupPrefs() {
   $("#h-enabled").addEventListener("change", (e) => { P.hotels.enabled = e.target.checked; $("#h-box").hidden = !e.target.checked; autosave(); });
   bind("#h-budget", (v) => (P.hotels.budget = v === "" ? "" : +v)); $("#h-rating").addEventListener("change", (e) => { P.hotels.min_rating = e.target.value; autosave(); }); bind("#h-must", (v) => (P.hotels.must_haves = v));
   bind("#p-details", (v) => (P.enter_details = v));
+  const U = () => S.unattended;
+  $("#u-enabled").addEventListener("change", (e) => { U().enabled = e.target.checked; $("#u-box").hidden = !e.target.checked; autosave(); });
+  [["#u-prev", "previous_run"], ["#u-docs", "new_documents"], ["#u-blocked", "blocked_sites"], ["#u-handoff", "handoff"]].forEach(([id, k]) =>
+    $(id).addEventListener("change", (e) => { U()[k] = e.target.value; autosave(); }));
   $("#dc-again").addEventListener("click", () => runDocCheck(true));
 }
 function renderPrefs() {
@@ -366,6 +371,9 @@ function fillAll() {
   $("#buf-min").value = P.buffer.custom_minutes; $("#p-cur").value = P.currency; $("#p-ins").value = P.insurance; $("#p-miles").value = P.miles; $("#p-rail").value = P.railcards;
   $("#h-enabled").checked = P.hotels.enabled; $("#h-box").hidden = !P.hotels.enabled; $("#h-budget").value = P.hotels.budget; $("#h-rating").value = P.hotels.min_rating; $("#h-must").value = P.hotels.must_haves;
   $("#p-details").checked = P.enter_details;
+  const U = S.unattended;
+  $("#u-enabled").checked = U.enabled; $("#u-box").hidden = !U.enabled;
+  $("#u-prev").value = U.previous_run; $("#u-docs").value = U.new_documents; $("#u-blocked").value = U.blocked_sites; $("#u-handoff").value = U.handoff;
   renderDestAirports(); renderWindow(); renderTravellers(); renderPrefs(); updateCurrency();
 }
 
@@ -435,6 +443,7 @@ async function pollResults() {
     h += `<section class="card"><h2>Top ${res.top.length} door-to-door options</h2>${table(res.top, cur)}</section>`;
     if (res.miles?.length) h += `<section class="card"><h2>Miles &amp; points options</h2>${table(res.miles, cur)}</section>`;
     if (res.smaller_savings?.length) h += `<details><summary>Smaller savings (${res.smaller_savings.length}) — below your ${n0(res.min_saving)} ${esc(cur)} minimum</summary>${table(res.smaller_savings, cur)}</details>`;
+    if (rep.decisions_needed && rep.decisions_needed.length) h += `<section class="card" style="border-color:var(--warn)"><h2>Needs your decision</h2>${block(rep.decisions_needed)}</section>`;
     if (rep.tools) h += `<section class="card"><h2>Tools &amp; sites</h2>${block(rep.tools)}</section>`;
     if (rep.checkout_check) h += `<section class="card"><h2>Double-check at checkout</h2>${block(rep.checkout_check)}</section>`;
     if (rep.alerts) h += `<section class="card"><h2>Price tracking</h2>${block(rep.alerts)}</section>`;

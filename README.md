@@ -24,7 +24,7 @@ It copies `fair-fares/` to each detected agent's skills folder:
 Options: `--yes`, `--only claude,codex`, `--all` (create folders even for agents not detected), `--uninstall`.
 Or with the skills CLI: `npx skills add <owner>/<repo>`.
 
-**Requirements:** Python 3.9+ (preferred) or Node 18+, plus Playwright and its Chromium. Optional: Playwright MCP, your agent's browser plugin, the Kiwi.com connector (`https://mcp.kiwi.com`, free, no key), and a small model through your agent's CLI. The skill's setup check finds what's missing and offers to install it. It always asks first.
+**Requirements:** Python 3.9+ (preferred; on Windows the command is usually `python`) or Node 18+, plus Playwright and its Chromium. Optional: Playwright MCP, your agent's browser plugin, the Kiwi.com connector (`https://mcp.kiwi.com`, free, no key), and a small model through your agent's CLI. The skill's setup check finds what's missing and offers to install it. It always asks first.
 
 ## Use
 
@@ -39,6 +39,10 @@ Ask your agent something like *"find me the cheapest way from Berlin to Goa in M
 7. **Take me to booking**: your agent's browser re-selects the exact flights and stops at passenger details for you.
 
 Your settings are kept in `~/.fair-fares/`.
+
+## Leave it running
+
+Every question comes at the start: the setup check (installs, in one batch), tool permissions (`setup_check.py --permissions` prints allow-rules for Claude Code), and the form's **Run on its own** card. After **Start search** the skill doesn't ask anything. Whatever it couldn't decide safely is listed under **Needs your decision** on the results page. See `fair-fares/references/unattended.md`.
 
 ## Layout
 

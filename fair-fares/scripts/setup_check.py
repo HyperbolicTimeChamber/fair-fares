@@ -117,9 +117,21 @@ def fingerprint(agent):
     return hashlib.sha256("|".join(parts).encode()).hexdigest()[:16]
 
 
+PLAIN = {  # what to tell the user, in everyday words (commands stay in "install" for when they ask)
+    "runtime": "Python or Node: the program that runs this skill's helpers.",
+    "playwright": "Playwright: lets me open and read travel websites in a browser window you can watch.",
+    "playwright_browser": "A browser for Playwright to use (a separate copy of Chromium, about 150 MB).",
+    "playwright_mcp": "Playwright for the agent: lets me click through a website step by step when a quick read isn't enough.",
+    "browser_plugin": "Your agent's own browser helper: used for the final price checks and to take you to the booking page.",
+    "kiwi": "Kiwi.com connection: a free flight-search service that checks many dates at once. Faster and gentler than visiting sites.",
+    "doc_model": "A small, cheap AI model for the document check on page 3, used only for questions the visa list can't answer.",
+    "visa_data": "The built-in visa list. It's older than a month, so I can download the newest version.",
+}
+
+
 def item(i, label, required, status, detail="", install=None, fallback=None):
-    return {"id": i, "label": label, "required": required, "status": status, "detail": detail,
-            "install": install or {}, "fallback": fallback}
+    return {"id": i, "label": label, "plain": PLAIN.get(i, label), "required": required, "status": status,
+            "detail": detail, "install": install or {}, "fallback": fallback}
 
 
 def check(agent, test_model=False):
@@ -214,9 +226,29 @@ def check(agent, test_model=False):
     return items
 
 
+def permissions(agent):
+    """Claude Code allow-rules so an unattended run never stops at a tool prompt.
+    Scoped to this skill's scripts, the run folder and the tools the workflow uses."""
+    sd = str(pathlib.Path(__file__).resolve().parent).replace("\\", "/")
+    rules = []
+    for py in ["python3", "python", "py"]:
+        rules.append(f"Bash({py} {sd}/*)")
+    rules += [f"Bash(node {sd}/server.mjs*)", "Bash(python -m playwright install chromium)",
+              "Read(~/.fair-fares/**)", "Edit(~/.fair-fares/**)", "Read(./fair-fares-runs/**)", "Edit(./fair-fares-runs/**)",
+              "Write(./fair-fares-runs/**)", "WebSearch", "WebFetch", "mcp__playwright", "mcp__kiwi-com-flight-search",
+              "mcp__claude-in-chrome", "Task"]
+    return {"agent": agent, "settings_file": "~/.claude/settings.json (all projects) or .claude/settings.local.json (this folder only)",
+            "merge_into": {"permissions": {"allow": rules}},
+            "never_allowed": "Booking, payment, passport details, sign-ins, CAPTCHAs: the skill never does these, whatever the permissions say.",
+            "note": "Other agents: grant the equivalent in their own permission settings (Codex approval policy, Gemini trustedFolders/allowed tools, Cursor auto-run allowlist)."}
+
+
 def main():
     a = sys.argv[1:]
     agent = a[a.index("--agent") + 1] if "--agent" in a else (detect_agent() or "unknown")
+    if "--permissions" in a:
+        print(json.dumps(permissions(agent), indent=1))
+        return 0
     if agent not in AGENTS:
         print(json.dumps({"error": f"Unknown agent '{agent}'. Pass --agent one of {AGENTS}."}))
         return 1

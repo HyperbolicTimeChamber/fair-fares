@@ -6,7 +6,7 @@ Before merging, make sure every row has destination transfer costs (from G), the
 If deep search found cheaper dates than phase 1, run a targeted follow-up on those dates, then merge again.
 
 ## Verify the top 10, one at a time
-1. **Price**: go as far as possible without entering personal details and record the price. `price_status = confirmed` if all fees are visible; otherwise `fees_may_be_added` with an estimate from the site's published fee/payment-charge pages in `payment_fees`. Enter names/contact details only if `prefs.enter_details` is on **and** the user confirms for this option. Never passport or payment details.
+1. **Price**: go as far as possible without entering personal details and record the price. `price_status = confirmed` if all fees are visible; otherwise `fees_may_be_added` with an estimate from the site's published fee/payment-charge pages in `payment_fees`. Enter names/contact details only if `prefs.enter_details` is on, and then: unattended = already approved for the top 3; attended = confirm per option. Never passport or payment details.
 2. **Transit documents**: for every connection country and each traveller's nationality, check transit visa/authorisation rules on official sites (consider residence permits/visas from the form: e.g. some nationalities transit visa-free with a valid US visa). If required, add the cost to `transit_document_costs`, describe it in `risks` (with processing time), and it is flagged in the table and totals.
 3. **Disruptions**: recent airspace closures, strikes, frequent delays on that route/operator → `risks`.
 4. Set `checked_at`.
@@ -21,7 +21,8 @@ Then merge again.
   "holidays": [{"name": "Holi", "start": "2027-03-22", "end": "2027-03-23"}],
   "tools": {"worked": ["Kiwi.com", "Skyscanner"], "blocked": ["Kayak (CAPTCHA, skipped)"]},
   "checkout_check": "On Pegasus, re-check that 20 kg bags were added for all 3 travellers before paying.",
-  "alerts": ["Set Google Flights alerts for BER–GOI 9–23 Mar…", "Re-run on 15 Jan or if alerts drop by 10%."]
+  "alerts": ["Set Google Flights alerts for BER–GOI 9–23 Mar…", "Re-run on 15 Jan or if alerts drop by 10%."],
+  "decisions_needed": ["Ryanair wanted a sign-in to show the final price: skipped. Check it yourself: <link>"]
 }
 ```
 

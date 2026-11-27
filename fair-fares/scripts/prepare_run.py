@@ -37,6 +37,12 @@ def main():
                 prev.append({"path": str(d), "has_results": (d / "all_options.csv").exists(),
                              "saved_at": ps.get("saved_at")})
     a = sys.argv[1:]
+    if "--auto" in a:  # unattended: follow the choice made in the form, never ask
+        choice = (s.get("unattended") or {}).get("previous_run", "fresh")
+        if prev and choice == "reuse":
+            a = ["--reuse", prev[-1]["path"]]
+        else:
+            a = ["--new"]
     if "--reuse" in a:
         p = root / os.path.basename(a[a.index("--reuse") + 1])
         write_json(p / "settings.json", s)
