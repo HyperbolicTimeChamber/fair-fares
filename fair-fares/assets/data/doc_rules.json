@@ -1,0 +1,178 @@
+{
+  "_about": "Curated first-pass rules. Fees and processing times are rough estimates (reviewed 2026-11) and are ALWAYS re-verified on the official sites during the search. Destinations not listed fall back to the dataset + the small model.",
+  "reviewed": "2026-11-27",
+  "groups": {
+    "SCHENGEN": ["AT","BE","BG","HR","CZ","DK","EE","FI","FR","DE","GR","HU","IS","IT","LV","LI","LT","LU","MT","NL","NO","PL","PT","RO","SK","SI","ES","SE","CH"]
+  },
+  "catalog": [
+    {"id":"us_green_card","label":"US green card (permanent resident)","country":"US","kind":"residence"},
+    {"id":"us_visa_b1b2","label":"US visa B1/B2","country":"US","kind":"visa"},
+    {"id":"uk_settled","label":"UK settled / pre-settled status or UK eVisa","country":"GB","kind":"residence"},
+    {"id":"uk_visa","label":"UK visa (visitor or long-stay)","country":"GB","kind":"visa"},
+    {"id":"schengen_residence","label":"Schengen residence permit","country":"SCHENGEN","kind":"residence"},
+    {"id":"schengen_d_visa","label":"Schengen long-stay (D) visa","country":"SCHENGEN","kind":"visa"},
+    {"id":"schengen_c_visa","label":"Schengen short-stay (C) visa","country":"SCHENGEN","kind":"visa"},
+    {"id":"ca_pr","label":"Canadian permanent resident card","country":"CA","kind":"residence"},
+    {"id":"ca_visa","label":"Canadian visa","country":"CA","kind":"visa"},
+    {"id":"au_visa","label":"Australian visa","country":"AU","kind":"visa"},
+    {"id":"jp_visa","label":"Japanese visa or residence card","country":"JP","kind":"visa"},
+    {"id":"gcc_residence","label":"GCC residence permit (UAE, Saudi Arabia, Qatar, ...)","country":"AE","kind":"residence"},
+    {"id":"apec_card","label":"APEC Business Travel Card","country":null,"kind":"card"},
+    {"id":"oci","label":"OCI card (Overseas Citizen of India)","country":"IN","kind":"residence"}
+  ],
+  "transit_relevant": ["us_green_card","us_visa_b1b2","uk_visa","uk_settled","schengen_residence","schengen_d_visa","schengen_c_visa","ca_pr","ca_visa","au_visa","jp_visa","gcc_residence"],
+  "generic": {
+    "passport_validity_months": 6,
+    "child_consent": {"label":"Child travel consent letter","when":"a child travels without both parents or legal guardians","fee":{"amount":0,"currency":"EUR","note":"free if self-written; notarisation may cost extra"},"processing_days":[0,3]}
+  },
+  "destinations": {
+    "IN": {
+      "official": ["https://indianvisaonline.gov.in/evisa/","https://ociservices.gov.in/"],
+      "passport_validity_months": 6, "blank_pages": 2,
+      "documents": [
+        {"id":"oci","label":"OCI card","replaces_visa":true,"note":"Lifelong multiple-entry status; carry the OCI card with a valid passport."},
+        {"id":"in_evisa","label":"Indian visa / e-Visa","visa_doc":true,"fee":{"amount":25,"currency":"USD","approx":true,"note":"varies by nationality, season and duration (roughly USD 10-80)"},"processing_days":[3,5],"apply_before_days":4,"official":"https://indianvisaonline.gov.in/evisa/"},
+        {"id":"in_passport","label":"Indian passport","citizen_of":"IN"}
+      ],
+      "child_consent": true
+    },
+    "US": {
+      "official": ["https://esta.cbp.dhs.gov/","https://travel.state.gov/"],
+      "passport_validity_months": 0,
+      "passport_note": "Many nationalities only need validity for the length of stay; ESTA requires an e-passport.",
+      "documents": [
+        {"id":"esta","label":"ESTA (Visa Waiver Programme)","for_status":["ETA","VF"],"fee":{"amount":40,"currency":"USD","approx":true},"processing_days":[1,3],"official":"https://esta.cbp.dhs.gov/"},
+        {"id":"us_visa_b1b2","label":"US visa B1/B2","visa_doc":true,"fee":{"amount":185,"currency":"USD","approx":true,"note":"plus any visa integrity/reciprocity fees"},"processing_days":[30,365],"official":"https://travel.state.gov/content/travel/en/us-visas.html"},
+        {"id":"us_green_card","label":"US green card","replaces_visa":true},
+        {"id":"us_passport","label":"US passport","citizen_of":"US"}
+      ],
+      "child_consent": true
+    },
+    "GB": {
+      "official": ["https://www.gov.uk/guidance/apply-for-an-electronic-travel-authorisation-eta","https://www.gov.uk/check-uk-visa"],
+      "passport_validity_months": 0,
+      "documents": [
+        {"id":"uk_eta","label":"UK ETA","for_status":["ETA","VF"],"fee":{"amount":16,"currency":"GBP","approx":true},"processing_days":[1,3],"official":"https://www.gov.uk/guidance/apply-for-an-electronic-travel-authorisation-eta"},
+        {"id":"uk_visa","label":"UK visitor visa","visa_doc":true,"fee":{"amount":127,"currency":"GBP","approx":true},"processing_days":[15,30],"official":"https://www.gov.uk/standard-visitor"},
+        {"id":"uk_settled","label":"UK settled / pre-settled status or eVisa","replaces_visa":true}
+      ],
+      "child_consent": true
+    },
+    "CA": {
+      "official": ["https://www.canada.ca/en/immigration-refugees-citizenship/services/visit-canada/eta.html"],
+      "passport_validity_months": 0,
+      "documents": [
+        {"id":"ca_eta","label":"Canada eTA (air arrivals)","for_status":["ETA","VF"],"fee":{"amount":7,"currency":"CAD","approx":true},"processing_days":[0,3],"official":"https://www.canada.ca/en/immigration-refugees-citizenship/services/visit-canada/eta.html"},
+        {"id":"ca_visa","label":"Canadian visitor visa","visa_doc":true,"fee":{"amount":100,"currency":"CAD","approx":true,"note":"plus biometrics"},"processing_days":[14,120]},
+        {"id":"ca_pr","label":"Canadian PR card","replaces_visa":true}
+      ],
+      "child_consent": true
+    },
+    "AU": {
+      "official": ["https://immi.homeaffairs.gov.au/"],
+      "passport_validity_months": 0,
+      "documents": [
+        {"id":"au_eta","label":"Australian ETA or eVisitor","for_status":["ETA","EV","VF"],"fee":{"amount":20,"currency":"AUD","approx":true,"note":"eVisitor is free; ETA app service fee"},"processing_days":[0,3],"official":"https://immi.homeaffairs.gov.au/visas/getting-a-visa/visa-listing/electronic-travel-authority-601"},
+        {"id":"au_visa","label":"Australian visitor visa","visa_doc":true,"fee":{"amount":195,"currency":"AUD","approx":true},"processing_days":[14,60]}
+      ]
+    },
+    "NZ": {
+      "official": ["https://www.immigration.govt.nz/new-zealand-visas/visas/visa/nzeta"],
+      "passport_validity_months": 3,
+      "onward_travel": true,
+      "documents": [
+        {"id":"nzeta","label":"NZeTA + tourism levy (IVL)","for_status":["ETA","VF"],"fee":{"amount":117,"currency":"NZD","approx":true,"note":"NZeTA approx NZD 17-23 plus IVL NZD 100"},"processing_days":[0,3]}
+      ]
+    },
+    "SCHENGEN": {
+      "official": ["https://travel-europe.europa.eu/etias_en","https://travel-europe.europa.eu/ees_en"],
+      "passport_validity_months": 3,
+      "passport_note": "Passport must be issued within the last 10 years and valid at least 3 months after you leave the Schengen area. 90/180-day rule applies.",
+      "documents": [
+        {"id":"etias","label":"ETIAS travel authorisation (check whether it has started)","for_status":["VF"],"fee":{"amount":20,"currency":"EUR","approx":true,"note":"only once ETIAS is operational"},"processing_days":[0,4],"official":"https://travel-europe.europa.eu/etias_en"},
+        {"id":"schengen_c_visa","label":"Schengen short-stay (C) visa","visa_doc":true,"fee":{"amount":90,"currency":"EUR","approx":true},"processing_days":[15,45]},
+        {"id":"schengen_residence","label":"Schengen residence permit","replaces_visa":true},
+        {"id":"schengen_d_visa","label":"Schengen long-stay (D) visa","replaces_visa":true}
+      ]
+    },
+    "JP": {
+      "official": ["https://www.mofa.go.jp/j_info/visit/visa/","https://www.vjw.digital.go.jp/"],
+      "passport_validity_months": 0,
+      "documents": [
+        {"id":"jp_vjw","label":"Visit Japan Web registration (free)","for_status":["VF"],"fee":{"amount":0,"currency":"JPY"},"processing_days":[0,0]},
+        {"id":"jp_visa","label":"Japanese visa","visa_doc":true,"fee":{"amount":3000,"currency":"JPY","approx":true},"processing_days":[5,15]}
+      ]
+    },
+    "TH": {
+      "official": ["https://tdac.immigration.go.th/","https://www.thaievisa.go.th/"],
+      "passport_validity_months": 6, "onward_travel": true,
+      "documents": [
+        {"id":"th_tdac","label":"Thailand Digital Arrival Card (free, within 3 days of arrival)","fee":{"amount":0,"currency":"THB"},"processing_days":[0,0]},
+        {"id":"th_evisa","label":"Thai e-Visa","visa_doc":true,"fee":{"amount":40,"currency":"USD","approx":true},"processing_days":[10,15],"official":"https://www.thaievisa.go.th/"}
+      ]
+    },
+    "AE": {
+      "official": ["https://icp.gov.ae/","https://www.gdrfad.gov.ae/"],
+      "passport_validity_months": 6,
+      "documents": [
+        {"id":"ae_visa","label":"UAE visit visa","visa_doc":true,"fee":{"amount":100,"currency":"USD","approx":true},"processing_days":[3,7]},
+        {"id":"gcc_residence","label":"GCC residence permit","replaces_visa":false,"note":"Some GCC residents get a visa on arrival or e-visa; check eligibility."}
+      ]
+    },
+    "TR": {
+      "official": ["https://www.evisa.gov.tr/"],
+      "passport_validity_months": 6,
+      "documents": [{"id":"tr_evisa","label":"Turkish e-Visa","visa_doc":true,"fee":{"amount":60,"currency":"USD","approx":true,"note":"varies by nationality"},"processing_days":[0,2],"official":"https://www.evisa.gov.tr/"}]
+    },
+    "LK": {
+      "official": ["https://eta.gov.lk/"],
+      "passport_validity_months": 6, "onward_travel": true,
+      "documents": [{"id":"lk_eta","label":"Sri Lanka ETA / visa","visa_doc":true,"fee":{"amount":50,"currency":"USD","approx":true,"note":"some nationalities free"},"processing_days":[1,3],"official":"https://eta.gov.lk/"}]
+    },
+    "ID": {
+      "official": ["https://evisa.imigrasi.go.id/","https://allindonesia.imigrasi.go.id/"],
+      "passport_validity_months": 6, "onward_travel": true,
+      "documents": [
+        {"id":"id_evoa","label":"Indonesia e-VoA","visa_doc":true,"fee":{"amount":500000,"currency":"IDR","approx":true},"processing_days":[0,2]},
+        {"id":"id_allindonesia","label":"All Indonesia arrival declaration (free)","fee":{"amount":0,"currency":"IDR"},"processing_days":[0,0]}
+      ]
+    },
+    "VN": {
+      "official": ["https://evisa.gov.vn/"],
+      "passport_validity_months": 6,
+      "documents": [{"id":"vn_evisa","label":"Vietnam e-Visa","visa_doc":true,"fee":{"amount":25,"currency":"USD","approx":true},"processing_days":[3,5],"official":"https://evisa.gov.vn/"}]
+    },
+    "KR": {
+      "official": ["https://www.k-eta.go.kr/"],
+      "passport_validity_months": 0,
+      "documents": [{"id":"k_eta","label":"K-ETA (check whether your nationality is currently exempt)","for_status":["VF"],"fee":{"amount":10000,"currency":"KRW","approx":true},"processing_days":[1,3],"official":"https://www.k-eta.go.kr/"}]
+    },
+    "ZA": {
+      "official": ["https://www.dha.gov.za/"],
+      "passport_validity_months": 1, "blank_pages": 2,
+      "passport_note": "Passport valid 30 days beyond departure; two blank pages.",
+      "documents": [],
+      "child_consent": true,
+      "child_note": "Unaccompanied minors and children travelling with one parent may be asked for consent letters and birth certificates."
+    },
+    "MX": {
+      "official": ["https://www.inm.gob.mx/"],
+      "passport_validity_months": 0,
+      "documents": [{"id":"us_visa_b1b2","label":"Valid US visa / US, UK, Schengen, Canada or Japan residence (lets many nationalities enter Mexico without a Mexican visa)","replaces_visa":true}],
+      "child_consent": true
+    },
+    "BR": {
+      "official": ["https://www.gov.br/mre/en"],
+      "passport_validity_months": 6,
+      "documents": [{"id":"br_evisa","label":"Brazil e-Visa (US, Canada, Australia passports)","visa_doc":true,"fee":{"amount":81,"currency":"USD","approx":true},"processing_days":[5,10]}],
+      "child_consent": true
+    },
+    "CN": {
+      "official": ["https://www.visaforchina.cn/","https://en.nia.gov.cn/"],
+      "passport_validity_months": 6, "blank_pages": 2,
+      "documents": [{"id":"cn_visa","label":"Chinese visa (many nationalities have visa-free entry or 240-hour transit)","visa_doc":true,"fee":{"amount":60,"currency":"EUR","approx":true},"processing_days":[4,10]}]
+    },
+    "SG": {"official":["https://www.ica.gov.sg/"],"passport_validity_months":6,"documents":[{"id":"sg_arrival","label":"SG Arrival Card (free, within 3 days of arrival)","fee":{"amount":0,"currency":"SGD"},"processing_days":[0,0]}]},
+    "EG": {"official":["https://www.visa2egypt.gov.eg/"],"passport_validity_months":6,"documents":[{"id":"eg_evisa","label":"Egypt e-Visa or visa on arrival","visa_doc":true,"fee":{"amount":25,"currency":"USD","approx":true},"processing_days":[1,7],"official":"https://www.visa2egypt.gov.eg/"}]}
+  }
+}

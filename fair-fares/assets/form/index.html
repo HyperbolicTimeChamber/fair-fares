@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fair Fares – cheapest door-to-door trip</title>
+<link rel="stylesheet" href="/form/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to form</a>
+<header class="top"><div class="top-inner">
+  <div class="brand"><span class="brand-mark" aria-hidden="true">FF</span> Fair Fares</div>
+  <nav class="steps" aria-label="Form pages">
+    <button data-go="trip"><span class="n">1</span>Trip</button>
+    <button data-go="travellers"><span class="n">2</span>Travellers</button>
+    <button data-go="check"><span class="n">3</span>Check &amp; preferences</button>
+    <button data-go="results"><span class="n">4</span>Results</button>
+  </nav>
+</div></header>
+
+<main id="main">
+<!-- PAGE 1 -->
+<div class="page" id="page-trip">
+  <h1>Where are you going?</h1>
+  <p class="lede">We search your closest airport first and most thoroughly, then anything else you allow.</p>
+  <section class="card"><h2>From</h2>
+    <div class="grid two">
+      <div class="field"><label for="home">Home city</label>
+        <input id="home" type="text" autocomplete="off" placeholder="e.g. Portland, Maine" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="home-list">
+        <span class="hint">Shown as City, Region, Country so same-named places are clear.</span></div>
+      <div class="field"><label for="airport">Closest airport</label>
+        <input id="airport" type="text" autocomplete="off" placeholder="Pick your home city first" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="airport-list">
+        <span class="hint">Nearest airports to your home city are listed first.</span></div>
+    </div>
+    <label class="check" style="margin-top:8px"><input type="checkbox" id="alt-enabled"> Also check other airports if cheaper</label>
+    <div id="alt-box" class="grid two" hidden>
+      <div class="field"><label for="alt-hours">Max train/bus time to another airport</label>
+        <div class="inline"><input id="alt-hours" type="number" min="1" max="48" step="0.5" inputmode="decimal" style="max-width:140px" aria-describedby="alt-hours-h"> <span>hours</span>
+        <label class="check"><input type="checkbox" id="alt-nolimit"> No limit</label></div>
+        <span class="hint" id="alt-hours-h">"No limit" allows overnight buses and trains.</span></div>
+      <div class="field"><label for="alt-saving">Minimum saving to be worth a longer route</label>
+        <div class="suffix"><input id="alt-saving" type="number" min="0" step="10" inputmode="numeric" placeholder="Empty = show all"><span class="cur-suffix">EUR</span></div></div>
+    </div>
+  </section>
+
+  <section class="card"><h2>To</h2>
+    <div class="grid two">
+      <div class="field"><label for="dest">Destination</label>
+        <input id="dest" type="text" autocomplete="off" placeholder="Country, region or city — e.g. Goa" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="dest-list"></div>
+      <div class="field"><label for="dest-ap">Destination airports <span class="hint">(optional)</span></label>
+        <input id="dest-ap" type="text" autocomplete="off" placeholder="Any airport" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="dest-ap-list">
+        <div class="chips" id="dest-ap-chips" aria-live="polite"></div>
+        <div class="suggest" id="dest-ap-suggest" aria-label="Nearby airports"></div></div>
+      <div class="field span2"><label for="stay">Where I'll stay <span class="hint">(optional — used to price the airport transfer)</span></label>
+        <input id="stay" type="text" placeholder="e.g. Anjuna, North Goa"></div>
+    </div>
+  </section>
+
+  <section class="card"><h2>When</h2>
+    <div class="seg" role="group" aria-label="Date type">
+      <button type="button" data-mode="flexible" aria-pressed="true">My dates are flexible</button>
+      <button type="button" data-mode="exact" aria-pressed="false">I have exact dates</button>
+    </div>
+    <div id="win-flex" class="grid three" style="margin-top:14px">
+      <div class="field"><label for="w-earliest">Earliest day I can leave home</label><input id="w-earliest" type="date"></div>
+      <div class="field"><label for="w-latest">Latest day I must be back home</label><input id="w-latest" type="date"></div>
+      <div class="field"><span class="label" id="nights-l">How long do you want to stay?</span>
+        <div class="inline" role="group" aria-labelledby="nights-l">
+          <input id="w-min" type="number" min="1" max="365" inputmode="numeric" style="max-width:90px" aria-label="Minimum nights"> to
+          <input id="w-max" type="number" min="1" max="365" inputmode="numeric" style="max-width:90px" aria-label="Maximum nights"> nights</div></div>
+    </div>
+    <div id="win-exact" class="grid two" style="margin-top:14px" hidden>
+      <div class="field"><label for="w-leave">Leave on</label><input id="w-leave" type="date"></div>
+      <div class="field"><label for="w-return">Return on</label><input id="w-return" type="date"></div>
+    </div>
+    <p class="summary" id="win-summary" aria-live="polite" style="margin-top:14px">Pick your dates.</p>
+    <div class="timeline" id="timeline" aria-hidden="true"></div>
+    <div class="tl-legend"><span><i style="background:var(--accent)"></i>Shortest stay from the first day</span><span><i style="background:repeating-linear-gradient(45deg,var(--warn) 0 3px,transparent 3px 6px)"></i>Holidays / events (likely price spikes, filled in by the search)</span></div>
+  </section>
+</div>
+
+<!-- PAGE 2 -->
+<div class="page" id="page-travellers" hidden>
+  <h1>Who's travelling?</h1>
+  <p class="lede">Passports and documents decide entry and transit rules, and sometimes the cheapest route.</p>
+  <section class="card"><h2>Travellers</h2>
+    <div class="grid two">
+      <div class="field"><span class="label" id="ad-l">Adults</span>
+        <div class="stepper" role="group" aria-labelledby="ad-l"><button type="button" data-step="adults:-1" aria-label="Fewer adults">−</button><output id="adults" aria-live="polite">1</output><button type="button" data-step="adults:1" aria-label="More adults">+</button></div></div>
+      <div class="field"><span class="label" id="ch-l">Children</span>
+        <div class="stepper" role="group" aria-labelledby="ch-l"><button type="button" data-step="children:-1" aria-label="Fewer children">−</button><output id="children" aria-live="polite">0</output><button type="button" data-step="children:1" aria-label="More children">+</button></div>
+        <span class="hint">Under 18. Ages help price child fares.</span></div>
+    </div>
+  </section>
+  <section class="card"><h2>Passports</h2>
+    <div class="seg" role="group" aria-label="Passport entry">
+      <button type="button" data-pp="same" aria-pressed="true">Same for everyone</button>
+      <button type="button" data-pp="per" aria-pressed="false">Per traveller</button>
+    </div>
+    <div id="pp-list" class="grid" style="margin-top:14px"></div>
+  </section>
+  <section class="card"><h2>Documents for <span id="dest-name">your destination</span></h2>
+    <p class="hint" id="destdocs-hint">Tick who holds each document.</p>
+    <div class="scroll-x"><table class="tick-grid" id="destdocs"></table></div>
+  </section>
+  <section class="card"><h2>Other documents</h2>
+    <p class="hint">Residence permits and visas (for example a US B1/B2 visa) can change transit rules on layovers.</p>
+    <div class="inline"><select id="other-pick" aria-label="Add a document" style="max-width:420px"></select>
+      <input id="other-free" type="text" placeholder="…or type another document" aria-label="Other document name" style="max-width:280px">
+      <button type="button" class="btn small" id="other-add">Add</button></div>
+    <div class="scroll-x" style="margin-top:12px"><table class="tick-grid" id="otherdocs"></table></div>
+  </section>
+</div>
+
+<!-- PAGE 3 -->
+<div class="page" id="page-check" hidden>
+  <h1>Document check &amp; preferences</h1>
+  <section class="card" aria-labelledby="dc-h">
+    <div class="inline" style="justify-content:space-between"><h2 id="dc-h" style="margin:0">Document check</h2>
+      <button type="button" class="btn small" id="dc-again">Check again</button></div>
+    <p class="hint" id="dc-date"></p>
+    <div id="dc-status" class="progress" aria-live="polite"></div>
+    <div id="dc-items"></div>
+    <p class="note">This check is a first pass; the search re-verifies on official government sites. Transit documents for layovers are checked after the search and added to cost automatically.</p>
+  </section>
+
+  <section class="card"><h2>Flights</h2>
+    <div class="grid three">
+      <div class="field"><label for="p-cabin">Cabin</label><select id="p-cabin"><option value="economy">Economy</option><option value="premium">Premium economy</option><option value="business">Business</option><option value="first">First</option></select></div>
+      <div class="field"><label for="p-bags">Checked bags per person</label><input id="p-bags" type="number" min="0" max="4" value="1" inputmode="numeric"></div>
+      <div class="field"><label for="p-stops">Max stops each way</label><select id="p-stops"><option value="0">Direct only</option><option value="1">1</option><option value="2" selected>2</option><option value="3">3+</option></select></div>
+      <div class="field"><label for="p-hours">Max door-to-door time each way</label><div class="suffix"><input id="p-hours" type="number" min="1" max="96" placeholder="No limit" inputmode="numeric"><span>hours</span></div></div>
+      <div class="field span2"><span class="label">Things to avoid</span>
+        <div class="inline"><label class="check"><input type="checkbox" id="p-avoid-overnight"> Overnight layovers</label>
+        <label class="check"><input type="checkbox" id="p-avoid-early"> Very early departures (before 06:00)</label></div></div>
+      <div class="field span2"><span class="label" id="ff-l">Fare flexibility</span>
+        <div class="seg" role="group" aria-labelledby="ff-l"><button type="button" data-flex="cheapest" aria-pressed="true">Cheapest only</button><button type="button" data-flex="changeable" aria-pressed="false">Show changeable fares too</button></div></div>
+    </div>
+  </section>
+
+  <section class="card"><h2>Connections &amp; money</h2>
+    <div class="grid two">
+      <div class="field span2"><span class="label" id="buf-l">Buffer style</span>
+        <div class="seg" role="group" aria-labelledby="buf-l">
+          <button type="button" data-buf="relaxed" aria-pressed="false">Relaxed</button><button type="button" data-buf="standard" aria-pressed="true">Standard</button>
+          <button type="button" data-buf="extra" aria-pressed="false">Extra safe</button><button type="button" data-buf="custom" aria-pressed="false">Custom</button></div>
+        <div class="inline" id="buf-custom" hidden><input id="buf-min" type="number" min="15" step="15" style="max-width:120px" aria-label="Custom buffer minutes"> minutes on top of the minimum connection time</div>
+        <span class="hint">Buffers add the published delay record of each train, bus or airline to a base minimum.</span></div>
+      <div class="field"><label for="p-cur">Currency</label><input id="p-cur" type="text" list="cur-list" autocomplete="off" placeholder="EUR"><datalist id="cur-list"></datalist>
+        <span class="hint" id="cur-hint">Set from your home city's country.</span></div>
+      <div class="field"><label for="p-ins">Travel insurance estimate</label><select id="p-ins"><option value="no">No</option><option value="yes">Yes</option></select></div>
+      <div class="field"><label for="p-miles">Miles / points programmes</label><input id="p-miles" type="text" placeholder="e.g. Miles & More, Flying Blue"></div>
+      <div class="field"><label for="p-rail">Railcards / discounts</label><input id="p-rail" type="text" placeholder="e.g. BahnCard 25, Interrail"></div>
+    </div>
+  </section>
+
+  <section class="card"><h2>Hotels</h2>
+    <label class="check"><input type="checkbox" id="h-enabled"> Include hotels</label>
+    <div class="grid three" id="h-box" hidden>
+      <div class="field"><label for="h-budget">Budget per night</label><div class="suffix"><input id="h-budget" type="number" min="0" inputmode="numeric"><span class="cur-suffix">EUR</span></div></div>
+      <div class="field"><label for="h-rating">Minimum rating</label><select id="h-rating"><option value="">Any</option><option>7</option><option>8</option><option>8.5</option><option>9</option></select></div>
+      <div class="field"><label for="h-must">Must-haves</label><input id="h-must" type="text" placeholder="e.g. pool, kitchen, free cancellation"></div>
+    </div>
+  </section>
+
+  <section class="card"><h2>Final prices</h2>
+    <label class="check"><input type="checkbox" id="p-details"> Let the agent enter names and contact details for the top 3 to see final prices</label>
+    <p class="hint">Off by default. The agent asks you each time. It never enters passport or payment details.</p>
+  </section>
+
+  <section class="card"><h2>Settings</h2>
+    <p class="hint">Settings are saved automatically and pre-filled next time. You can also keep a copy as a file.</p>
+    <div class="inline">
+      <button type="button" class="btn small" id="save-file">Save settings to file</button>
+      <label class="btn small" for="load-file" tabindex="0">Load from file</label><input type="file" id="load-file" accept="application/json" class="sr">
+      <button type="button" class="btn primary" id="start-inline">Start search</button>
+    </div>
+  </section>
+</div>
+
+<!-- PAGE 4 -->
+<div class="page" id="page-results" hidden>
+  <h1>Results</h1>
+  <div id="r-progress" class="card progress" aria-live="polite"></div>
+  <div id="r-body"></div>
+</div>
+</main>
+
+<div class="actions"><div class="actions-inner">
+  <button type="button" class="btn" id="back">← Back</button>
+  <div class="right"><button type="button" class="btn primary" id="next">Next →</button></div>
+</div></div>
+<div class="toast" id="toast" role="status" hidden></div>
+<script src="/form/app.js"></script>
+</body>
+</html>

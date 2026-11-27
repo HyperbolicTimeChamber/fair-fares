@@ -1,0 +1,46 @@
+{
+ "datasets": {
+  "countries-states": {
+   "source": "https://github.com/dr5hn/countries-states-cities-database",
+   "licence": "ODbL-1.0",
+   "date": "2026-11-24",
+   "downloaded": "2026-11-27",
+   "rows": {
+    "countries": 250,
+    "regions": 3895
+   }
+  },
+  "cities": {
+   "source": "https://download.geonames.org/export/dump/cities15000.zip",
+   "licence": "CC-BY-4.0 (GeoNames)",
+   "date": "2026-11-27",
+   "downloaded": "2026-11-27",
+   "filter": "population >= 15,000",
+   "rows": 34248
+  },
+  "currencies": {
+   "source": "countries.csv currency columns (countries-states-cities-database)",
+   "licence": "ODbL-1.0",
+   "date": "2026-11-24",
+   "downloaded": "2026-11-27",
+   "rows": 154
+  },
+  "airports": {
+   "source": "https://raw.githubusercontent.com/davidmegginson/ourairports-data/main/airports.csv",
+   "licence": "Public domain (OurAirports)",
+   "date": "2026-11-27",
+   "downloaded": "2026-11-27",
+   "filter": "scheduled_service=yes, has IATA code, not closed",
+   "rows": 4132
+  },
+  "visa": {
+   "source": "https://github.com/imorte/passport-index-data",
+   "licence": "MIT (data from passportindex.org)",
+   "date": "2026-02-18",
+   "downloaded": "2026-11-27",
+   "rows": 39601,
+   "values": "number = visa-free days; VF visa free; VOA visa on arrival; EV e-visa; ETA electronic travel authorisation; VR visa required; NA no admission; SELF own country"
+  }
+ },
+ "updated": "2026-11-27"
+}
