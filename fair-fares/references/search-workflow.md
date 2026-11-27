@@ -10,10 +10,19 @@
 - `total_cost_all_travellers` covers **all** travellers. Bag fees for the chosen number of bags each way.
 - Return to the lead only: best 5 (one line each), sites that worked, sites blocked. No page dumps.
 
+## Turning the form's dates into flight dates
+
+`trip.window.basis` decides where travel days go:
+- **home**: the dates include travel. The outbound journey starts (leaving home, including any train/bus to the airport) on or after `earliest`, and the return journey ends at home on or before `latest`. Nights = nights at the destination, so a trip with a 1-day journey each way uses `nights + 2` days of the window. Drop date pairs whose door-to-door journey doesn't fit.
+- **destination**: the dates are days at the destination. Arrival at the destination (after the airport transfer) must be on or after `earliest`, and departure from it on or before `latest`; travel happens outside. Search outbound flights departing up to 1–2 days before `earliest` (long-haul or overnight) and returns landing home after `latest`.
+- Exact mode works the same way with `leave`/`return`.
+- `till_end: true` means no maximum stay: use `max_nights` = the full window length.
+Tell the subagents which rule applies and the resulting flight-date ranges.
+
 ## Phase 1: broad scan (alone, first)
 **A**: fares from the closest airport (and other home-city airports) to all destination airports across every valid date pair in the window.
 - Kiwi.com tool: query date ranges/flexible dates; it returns booking links.
-- No Kiwi: `gflights_scan.py --from BER --to GOI,GOX --earliest … --latest … --min-nights … --max-nights … --adults … --children ages --currency … --max-stops … --out RUN/results/A_gflights.csv`. Capped at 30 queries; stops at any block.
+- No Kiwi: `gflights_scan.py --from BER --to GOI,GOX --earliest … --latest … --min-nights … --max-nights … --adults … --children ages --currency … --max-stops … --out RUN/results/A_gflights.csv`. Capped at 30 queries; stops at any block. Pass flight dates worked out with the rules above (for basis `destination`, `--earliest` may be a day before the form's date).
 - Output: the 5 cheapest date windows and any mixed-airline itineraries.
 - More than one traveller: also price 1 traveller on the best windows. A lower per-person price than the group total ÷ n means last-seat pricing: note it in `risks` (splitting bookings may save money).
 

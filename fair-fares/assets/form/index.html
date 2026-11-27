@@ -19,6 +19,11 @@
 </div></header>
 
 <main id="main">
+<nav class="pagenav top" aria-label="Page navigation">
+  <button type="button" class="btn js-back">← Back</button>
+  <span class="nav-hint muted" aria-live="polite"></span>
+  <button type="button" class="btn primary js-next">Next →</button>
+</nav>
 <!-- PAGE 1 -->
 <div class="page" id="page-trip">
   <h1>Where are you going?</h1>
@@ -35,7 +40,7 @@
     <label class="check" style="margin-top:8px"><input type="checkbox" id="alt-enabled"> Also check other airports if cheaper</label>
     <div id="alt-box" class="grid two" hidden>
       <div class="field"><label for="alt-hours">Max train/bus time to another airport</label>
-        <div class="inline"><input id="alt-hours" type="number" min="1" max="48" step="0.5" inputmode="decimal" style="max-width:140px" aria-describedby="alt-hours-h"> <span>hours</span>
+        <div class="inline"><span id="alt-hours-wrap" class="inline"><input id="alt-hours" type="number" min="1" max="48" step="0.5" inputmode="decimal" style="max-width:140px" aria-describedby="alt-hours-h"> <span>hours</span></span>
         <label class="check"><input type="checkbox" id="alt-nolimit"> No limit</label></div>
         <span class="hint" id="alt-hours-h">"No limit" allows overnight buses and trains.</span></div>
       <div class="field"><label for="alt-saving">Minimum saving to be worth a longer route</label>
@@ -57,21 +62,29 @@
   </section>
 
   <section class="card"><h2>When</h2>
-    <div class="seg" role="group" aria-label="Date type">
+    <div class="field"><span class="label" id="basis-l">What do your dates mean?</span>
+      <div class="seg" role="group" aria-labelledby="basis-l">
+        <button type="button" data-basis="home" aria-pressed="true">They include my travel days</button>
+        <button type="button" data-basis="destination" aria-pressed="false">They're only my days at the destination</button>
+      </div>
+      <p class="note" id="basis-hint" style="margin:8px 0 0"></p></div>
+    <div class="seg" role="group" aria-label="Date type" style="margin-top:14px">
       <button type="button" data-mode="flexible" aria-pressed="true">My dates are flexible</button>
       <button type="button" data-mode="exact" aria-pressed="false">I have exact dates</button>
     </div>
     <div id="win-flex" class="grid three" style="margin-top:14px">
-      <div class="field"><label for="w-earliest">Earliest day I can leave home</label><input id="w-earliest" type="date"></div>
-      <div class="field"><label for="w-latest">Latest day I must be back home</label><input id="w-latest" type="date"></div>
-      <div class="field"><span class="label" id="nights-l">How long do you want to stay?</span>
+      <div class="field"><label for="w-earliest" id="l-earliest">Earliest day I can leave home</label><input id="w-earliest" type="date"></div>
+      <div class="field"><label for="w-latest" id="l-latest">Latest day I must be back home</label><input id="w-latest" type="date"></div>
+      <div class="field"><span class="label" id="nights-l">How many nights at the destination?</span>
         <div class="inline" role="group" aria-labelledby="nights-l">
-          <input id="w-min" type="number" min="1" max="365" inputmode="numeric" style="max-width:90px" aria-label="Minimum nights"> to
-          <input id="w-max" type="number" min="1" max="365" inputmode="numeric" style="max-width:90px" aria-label="Maximum nights"> nights</div></div>
+          <input id="w-min" type="number" min="1" max="365" inputmode="numeric" style="max-width:90px" aria-label="Minimum nights">
+          <span id="w-max-wrap" class="inline">to <input id="w-max" type="number" min="1" max="365" inputmode="numeric" style="max-width:90px" aria-label="Maximum nights"></span> nights</div>
+        <label class="check"><input type="checkbox" id="w-tillend"> Or longer, up to the end of my window</label>
+        <span class="hint" id="nights-hint"></span></div>
     </div>
     <div id="win-exact" class="grid two" style="margin-top:14px" hidden>
-      <div class="field"><label for="w-leave">Leave on</label><input id="w-leave" type="date"></div>
-      <div class="field"><label for="w-return">Return on</label><input id="w-return" type="date"></div>
+      <div class="field"><label for="w-leave" id="l-leave">Leave home on</label><input id="w-leave" type="date"></div>
+      <div class="field"><label for="w-return" id="l-return">Get back home on</label><input id="w-return" type="date"></div>
     </div>
     <p class="summary" id="win-summary" aria-live="polite" style="margin-top:14px">Pick your dates.</p>
     <div class="timeline" id="timeline" aria-hidden="true"></div>
@@ -189,7 +202,6 @@
     <div class="inline">
       <button type="button" class="btn small" id="save-file">Save settings to file</button>
       <label class="btn small" for="load-file" tabindex="0">Load from file</label><input type="file" id="load-file" accept="application/json" class="sr">
-      <button type="button" class="btn primary" id="start-inline">Start search</button>
     </div>
   </section>
 </div>
@@ -200,12 +212,13 @@
   <div id="r-progress" class="card progress" aria-live="polite"></div>
   <div id="r-body"></div>
 </div>
+<nav class="pagenav bottom" aria-label="Page navigation">
+  <button type="button" class="btn js-back">← Back</button>
+  <span class="nav-hint muted" aria-live="polite"></span>
+  <button type="button" class="btn primary js-next">Next →</button>
+</nav>
 </main>
 
-<div class="actions"><div class="actions-inner">
-  <button type="button" class="btn" id="back">← Back</button>
-  <div class="right"><button type="button" class="btn primary" id="next">Next →</button></div>
-</div></div>
 <div class="toast" id="toast" role="status" hidden></div>
 <script src="/form/app.js"></script>
 </body>

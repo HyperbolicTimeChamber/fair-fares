@@ -12,7 +12,7 @@ const DEFAULTS = () => ({
   version: 1,
   trip: { home_city: null, closest_airport: null, alternatives: { enabled: false, max_ground_hours: 6, no_limit: false, min_saving: "" },
     destination: null, destination_airports: [], stay_area: "",
-    window: { mode: "flexible", earliest: "", latest: "", min_nights: 7, max_nights: 14, leave: "", return: "" } },
+    window: { basis: "home", mode: "flexible", earliest: "", latest: "", min_nights: 7, max_nights: 14, till_end: false, leave: "", return: "" } },
   travellers: { adults: 1, children: 0, list: [], passport_mode: "same", passports: { "*": [{ country: "", expiry: "" }] } },
   documents: [],
   doccheck: { req_key: "", result: null, choices: {} },
@@ -30,7 +30,7 @@ async function api(path, body) {
 }
 function toast(msg, ms = 3500) { const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => (t.hidden = true), ms); }
 let saveTimer;
-function autosave() { clearTimeout(saveTimer); saveTimer = setTimeout(() => api("/api/settings", S).catch(() => {}), 700); }
+function autosave() { clearTimeout(saveTimer); saveTimer = setTimeout(() => api("/api/settings", S).catch(() => {}), 700); updateNav(); }
 function merge(base, over) { for (const k in over) { if (over[k] && typeof over[k] === "object" && !Array.isArray(over[k]) && base[k] && typeof base[k] === "object") merge(base[k], over[k]); else base[k] = over[k]; } return base; }
 
 /* ---------- geography helpers ---------- */
@@ -126,7 +126,7 @@ function setupTrip() {
     pick: (a) => { addDestAirport(a); $("#dest-ap").value = ""; },
   });
   $("#alt-enabled").addEventListener("change", (e) => { S.trip.alternatives.enabled = e.target.checked; $("#alt-box").hidden = !e.target.checked; autosave(); });
-  $("#alt-nolimit").addEventListener("change", (e) => { S.trip.alternatives.no_limit = e.target.checked; $("#alt-hours").disabled = e.target.checked; autosave(); });
+  $("#alt-nolimit").addEventListener("change", (e) => { S.trip.alternatives.no_limit = e.target.checked; $("#alt-hours-wrap").hidden = e.target.checked; autosave(); });
   bind("#alt-hours", (v) => (S.trip.alternatives.max_ground_hours = v === "" ? "" : +v));
   bind("#alt-saving", (v) => (S.trip.alternatives.min_saving = v === "" ? "" : +v));
   bind("#stay", (v) => (S.trip.stay_area = v));
@@ -134,6 +134,8 @@ function setupTrip() {
   [["#w-earliest", "earliest"], ["#w-latest", "latest"], ["#w-leave", "leave"], ["#w-return", "return"]].forEach(([id, k]) => bind(id, (v) => { S.trip.window[k] = v; renderWindow(); }));
   bind("#w-min", (v) => { S.trip.window.min_nights = +v || ""; renderWindow(); });
   bind("#w-max", (v) => { S.trip.window.max_nights = +v || ""; renderWindow(); });
+  $("#w-tillend").addEventListener("change", (e) => { S.trip.window.till_end = e.target.checked; renderWindow(); autosave(); });
+  $$("[data-basis]").forEach((b) => b.addEventListener("click", () => { S.trip.window.basis = b.dataset.basis; renderWindow(); autosave(); }));
 }
 function bind(sel, fn) { $(sel).addEventListener("input", (e) => { fn(e.target.type === "checkbox" ? e.target.checked : e.target.value); autosave(); }); }
 function addDestAirport(a) { if (!S.trip.destination_airports.some((x) => x.code === a[0])) S.trip.destination_airports.push(apObj(a)); renderDestAirports(); autosave(); }
@@ -156,21 +158,51 @@ const fmt = (iso, year) => {
   return `${p({ weekday: "short" })} ${d.getDate()} ${p({ month: "short" })}${year ? " " + d.getFullYear() : ""}`;
 };
 const nightsBetween = (a, b) => Math.round((new Date(b) - new Date(a)) / 864e5);
+function windowSpan() { const w = S.trip.window; return w.earliest && w.latest ? nightsBetween(w.earliest, w.latest) : 0; }
 function renderWindow() {
-  const w = S.trip.window, flex = w.mode === "flexible";
+  const w = S.trip.window, flex = w.mode === "flexible", dest = w.basis === "destination";
   $$("[data-mode]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.mode === w.mode));
+  $$("[data-basis]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.basis === w.basis));
   $("#win-flex").hidden = !flex; $("#win-exact").hidden = flex;
+  const addD = (iso, n) => { const d = new Date(iso + "T12:00:00"); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
+  const place = S.trip.destination?.name || "your destination";
+  const exA = (flex ? w.earliest : w.leave) || "2027-03-06", exB = (flex ? w.latest : w.return) || "2027-04-25";
+  $("#basis-hint").innerHTML = dest
+    ? `<strong>Travel happens outside your dates.</strong> Your dates are when you can be in ${esc(place)}. To be there from ${esc(fmt(exA))}, you might leave home on ${esc(fmt(addD(exA, -1)))}, and after leaving on ${esc(fmt(exB))} you might get home on ${esc(fmt(addD(exB, 1)))}. Choose this when the dates are fixed by something at the destination, like an event or a booking there.`
+    : `<strong>Your travel days count inside your dates.</strong> You leave home on or after ${esc(fmt(exA))} and are back home by ${esc(fmt(exB))}. A long trip often takes about a day each way, so you get a day or two fewer nights in ${esc(place)} than the dates suggest. Choose this when the dates are your time off.`;
+  $("#l-earliest").textContent = dest ? "First day I can be at my destination" : "Earliest day I can leave home";
+  $("#l-latest").textContent = dest ? "Last day I can be at my destination" : "Latest day I must be back home";
+  $("#l-leave").textContent = dest ? "Arrive at my destination on" : "Leave home on";
+  $("#l-return").textContent = dest ? "Leave my destination on" : "Get back home on";
+  // Keep the nights within the window.
+  const span = windowSpan();
+  const minI = $("#w-min"), maxI = $("#w-max");
+  if (span > 0) {
+    minI.max = span; maxI.max = span; maxI.min = Math.max(1, w.min_nights || 1);
+    if (w.min_nights > span) { w.min_nights = span; minI.value = span; }
+    if (w.max_nights > span) { w.max_nights = span; maxI.value = span; }
+    if (w.max_nights && w.min_nights > w.max_nights) { w.max_nights = w.min_nights; maxI.value = w.min_nights; }
+  } else { minI.max = 365; maxI.max = 365; }
+  $("#w-max-wrap").hidden = !!w.till_end; $("#w-tillend").checked = !!w.till_end;
+  $("#nights-hint").textContent = span > 0 ? (dest
+    ? `You can be there for up to ${span} nights. Travel days are extra.`
+    : `${span} nights from leaving home to getting back, travel days included. Count only the nights you want at the destination.`) : "";
   let msg = "Pick your dates.", ok = false;
   if (flex && w.earliest && w.latest) {
-    const span = nightsBetween(w.earliest, w.latest), y = new Date(w.earliest).getFullYear() !== new Date(w.latest).getFullYear();
-    if (span <= 0) msg = "The latest return day must be after the earliest departure.";
-    else if (w.min_nights && w.max_nights && w.min_nights > w.max_nights) msg = "Minimum nights can't be more than maximum nights.";
-    else if (w.min_nights > span) msg = `Your window is only ${span} nights — shorter than the minimum stay.`;
-    else { ok = true; msg = `Leave any day from ${fmt(w.earliest, y)}, be back home by ${fmt(w.latest, true)}, staying ${w.min_nights || 1} to ${Math.min(w.max_nights || span, span)} nights.`; }
+    const y = new Date(w.earliest).getFullYear() !== new Date(w.latest).getFullYear();
+    const maxN = w.till_end ? span : Math.min(w.max_nights || span, span);
+    const stay = w.till_end ? `at least ${w.min_nights || 1} nights in ${place} (longer is fine, up to your whole window)` : `${w.min_nights || 1} to ${maxN} nights in ${place}`;
+    if (span <= 0) msg = "The second date must be after the first.";
+    else if (!w.min_nights) msg = "How many nights do you want at the destination?";
+    else { ok = true; msg = dest
+      ? `Be at your destination any time from ${fmt(w.earliest, y)} to ${fmt(w.latest, true)}, staying ${stay}. Travel there and back can be the day before and the day after.`
+      : `Leave home any day from ${fmt(w.earliest, y)}, be back home by ${fmt(w.latest, true)}, staying ${stay}. Travel days count inside these dates.`; }
   } else if (!flex && w.leave && w.return) {
     const n = nightsBetween(w.leave, w.return);
-    msg = n > 0 ? `Leave on ${fmt(w.leave)}, return on ${fmt(w.return, true)} (${n} nights).` : "Return must be after departure.";
     ok = n > 0;
+    msg = !ok ? "The second date must be after the first." : dest
+      ? `Arrive on ${fmt(w.leave)} and leave on ${fmt(w.return, true)} (${n} nights there). Travel can be a day before and after.`
+      : `Leave home on ${fmt(w.leave)}, get back home on ${fmt(w.return, true)} (${n} nights from leaving to getting back, travel days included).`;
   }
   $("#win-summary").textContent = msg;
   const tl = $("#timeline");
@@ -178,7 +210,7 @@ function renderWindow() {
   if (!ok) { tl.innerHTML = ""; return; }
   const total = nightsBetween(a, b), pct = (iso) => Math.max(0, Math.min(100, (nightsBetween(a, iso) / total) * 100));
   const addDays = (iso, n) => { const d = new Date(iso + "T12:00:00"); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
-  const minEnd = flex ? addDays(a, w.min_nights || 1) : b, maxEnd = flex ? addDays(a, Math.min(w.max_nights || total, total)) : b;
+  const minEnd = flex ? addDays(a, w.min_nights || 1) : b, maxEnd = flex ? addDays(a, w.till_end ? total : Math.min(w.max_nights || total, total)) : b;
   const hols = (S._holidays || []).filter((h) => h.end >= a && h.start <= b)
     .map((h) => `<div class="tl-hol" title="${esc(h.name)}" style="left:${pct(h.start)}%;width:${Math.max(0.8, pct(h.end) - pct(h.start))}%"></div>`).join("");
   tl.innerHTML = `<div class="tl-track"></div><div class="tl-trip" style="left:0;width:${pct(maxEnd)}%;opacity:.25"></div><div class="tl-trip" style="left:0;width:${pct(minEnd)}%"></div>${hols}
@@ -363,9 +395,9 @@ function renderPrefs() {
 function fillAll() {
   const T = S.trip, P = S.prefs, A = T.alternatives, W = T.window;
   $("#home").value = T.home_city?.label || ""; $("#airport").value = T.closest_airport?.label || ""; $("#dest").value = T.destination?.label || "";
-  $("#alt-enabled").checked = A.enabled; $("#alt-box").hidden = !A.enabled; $("#alt-hours").value = A.max_ground_hours; $("#alt-nolimit").checked = A.no_limit; $("#alt-hours").disabled = A.no_limit; $("#alt-saving").value = A.min_saving;
+  $("#alt-enabled").checked = A.enabled; $("#alt-box").hidden = !A.enabled; $("#alt-hours").value = A.max_ground_hours; $("#alt-nolimit").checked = A.no_limit; $("#alt-hours-wrap").hidden = A.no_limit; $("#alt-saving").value = A.min_saving;
   $("#stay").value = T.stay_area;
-  $("#w-earliest").value = W.earliest; $("#w-latest").value = W.latest; $("#w-min").value = W.min_nights; $("#w-max").value = W.max_nights; $("#w-leave").value = W.leave; $("#w-return").value = W.return;
+  $("#w-earliest").value = W.earliest; $("#w-latest").value = W.latest; $("#w-min").value = W.min_nights; $("#w-max").value = W.max_nights; $("#w-tillend").checked = !!W.till_end; $("#w-leave").value = W.leave; $("#w-return").value = W.return;
   $("#p-cabin").value = P.cabin; $("#p-bags").value = P.bags; $("#p-stops").value = P.max_stops; $("#p-hours").value = P.max_hours_each_way;
   $("#p-avoid-overnight").checked = P.avoid.overnight_layovers; $("#p-avoid-early").checked = P.avoid.early_departures;
   $("#buf-min").value = P.buffer.custom_minutes; $("#p-cur").value = P.currency; $("#p-ins").value = P.insurance; $("#p-miles").value = P.miles; $("#p-rail").value = P.railcards;
@@ -383,7 +415,13 @@ function problems() {
   if (!T.home_city) out.push(["trip", "Choose your home city."]);
   if (!T.closest_airport) out.push(["trip", "Choose your closest airport."]);
   if (!T.destination) out.push(["trip", "Choose a destination."]);
-  if (W.mode === "flexible" ? !(W.earliest && W.latest && nightsBetween(W.earliest, W.latest) > 0) : !(W.leave && W.return && nightsBetween(W.leave, W.return) > 0)) out.push(["trip", "Check your travel dates."]);
+  if (W.mode === "flexible") {
+    if (!(W.earliest && W.latest)) out.push(["trip", "Pick both dates."]);
+    else if (nightsBetween(W.earliest, W.latest) <= 0) out.push(["trip", "The second date must be after the first."]);
+    else if (!W.min_nights) out.push(["trip", "Say how many nights you want to stay."]);
+    else if (!W.till_end && !W.max_nights) out.push(["trip", "Add the longest stay, or tick \"up to the end of my window\"."]);
+  } else if (!(W.leave && W.return)) out.push(["trip", "Pick both dates."]);
+  else if (nightsBetween(W.leave, W.return) <= 0) out.push(["trip", "The second date must be after the first."]);
   const t = S.travellers;
   for (const x of t.list) { const pps = t.passport_mode === "same" ? t.passports["*"] : t.passports[x.id]; if (!(pps || []).some((p) => p.country)) { out.push(["travellers", `Add a passport country for ${tName(x)}.`]); break; } }
   if (!/^[A-Z]{3}$/.test(S.prefs.currency || "")) out.push(["check", "Choose a currency."]);
@@ -465,21 +503,27 @@ function go(page) {
   PAGES.forEach((p) => ($(`#page-${p}`).hidden = p !== page));
   $$("nav.steps button").forEach((b) => (b.dataset.go === page ? b.setAttribute("aria-current", "step") : b.removeAttribute("aria-current")));
   const i = PAGES.indexOf(page);
-  $("#back").hidden = i === 0;
-  $("#next").hidden = page === "results";
-  $("#next").textContent = page === "check" ? "Start search" : "Next →";
+  $$(".js-back").forEach((b) => (b.hidden = i === 0));
+  $$(".js-next").forEach((b) => { b.hidden = page === "results"; b.textContent = page === "check" ? "Start search" : "Next →"; });
   if (location.hash !== "#" + page) history.replaceState(null, "", "#" + page);
   if (page === "travellers") { renderTravellers(); loadDestDocs(); }
   if (page === "check") runDocCheck(false);
   if (page === "results") pollResults(); else clearTimeout(pollTimer);
   window.scrollTo({ top: 0 });
-  $("#main h1:not([hidden])")?.focus?.();
+  updateNav();
+}
+// Next is only usable once everything up to and including this page is filled in.
+function updateNav() {
+  const page = location.hash.slice(1) || "trip", i = PAGES.indexOf(page);
+  if (i < 0 || page === "results") { $$(".nav-hint").forEach((h) => (h.textContent = "")); return; }
+  const p = problems().filter(([pg]) => PAGES.indexOf(pg) <= i);
+  $$(".js-next").forEach((b) => (b.disabled = p.length > 0));
+  $$(".nav-hint").forEach((h) => (h.textContent = p.length ? p[0][1] : ""));
 }
 function setupNav() {
   $$("nav.steps button").forEach((b) => b.addEventListener("click", () => go(b.dataset.go)));
-  $("#back").addEventListener("click", () => go(PAGES[Math.max(0, PAGES.indexOf(location.hash.slice(1)) - 1)]));
-  $("#next").addEventListener("click", () => { const cur = location.hash.slice(1) || "trip"; if (cur === "check") start(); else go(PAGES[PAGES.indexOf(cur) + 1]); });
-  $("#start-inline").addEventListener("click", start);
+  $$(".js-back").forEach((b) => b.addEventListener("click", () => go(PAGES[Math.max(0, PAGES.indexOf(location.hash.slice(1)) - 1)])));
+  $$(".js-next").forEach((b) => b.addEventListener("click", () => { const cur = location.hash.slice(1) || "trip"; if (cur === "check") start(); else go(PAGES[PAGES.indexOf(cur) + 1]); }));
   $("#save-file").addEventListener("click", () => {
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([JSON.stringify(S, null, 1)], { type: "application/json" }));

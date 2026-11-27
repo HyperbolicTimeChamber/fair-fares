@@ -32,7 +32,7 @@ nav.steps button { min-height: 44px; border: 0; background: transparent; color: 
 nav.steps button[aria-current="step"] { background: var(--accent-soft); color: var(--text); }
 nav.steps .n { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid currentColor; font-size: .75rem; margin-right: 6px; }
 
-main { max-width: 980px; margin: 0 auto; padding: 20px 16px 120px; }
+main { max-width: 980px; margin: 0 auto; padding: 16px 16px 40px; }
 h1 { font-size: 1.6rem; letter-spacing: -.02em; margin: 8px 0 4px; }
 h2 { font-size: 1.1rem; margin: 0 0 12px; }
 .lede { color: var(--muted); margin: 0 0 20px; }
@@ -122,3 +122,10 @@ details > summary { min-height: 48px; display: flex; align-items: center; font-w
 .toast { position: fixed; left: 50%; bottom: 84px; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-weight: 600; z-index: 40; max-width: 90vw; }
 [hidden] { display: none !important; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+.pagenav { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 4px 0 12px; }
+.pagenav.bottom { margin: 20px 0 0; padding-top: 16px; border-top: 1px solid var(--line); }
+.pagenav .js-next { margin-left: auto; }
+.pagenav .nav-hint { font-size: .9rem; flex: 1 1 200px; text-align: right; }
+.pagenav .js-back[hidden] + .nav-hint { text-align: right; }
+.btn[aria-disabled="true"] { opacity: .5; cursor: not-allowed; }
