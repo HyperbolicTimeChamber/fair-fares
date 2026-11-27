@@ -457,7 +457,7 @@ function table(list, cur) { return `<div class="scroll-x"><table class="results"
 function block(v) {
   if (!v) return "";
   if (typeof v === "string") return `<p>${esc(v)}</p>`;
-  if (Array.isArray(v)) return v.length && typeof v[0] === "object" ? `<div class="scroll-x"><table class="results"><thead><tr>${Object.keys(v[0]).map((k) => `<th>${esc(k.replace(/_/g, " "))}</th>`).join("")}</tr></thead><tbody>${v.map((r) => `<tr>${Object.values(r).map((x) => `<td>${esc(Array.isArray(x) ? x.join(", ") : x)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>` : `<ul>${v.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>`;
+  if (Array.isArray(v)) return v.length && typeof v[0] === "object" ? `<div class="scroll-x"><table class="results"><thead><tr>${Object.keys(v[0]).map((k) => `<th>${esc(k.replace(/_/g, " "))}</th>`).join("")}</tr></thead><tbody>${v.map((r) => `<tr>${Object.entries(r).map(([k, x]) => `<td data-l="${esc(k.replace(/_/g, " "))}">${esc(Array.isArray(x) ? x.join(", ") : x)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>` : `<ul>${v.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>`;
   return `<ul>${Object.entries(v).map(([k, x]) => `<li><strong>${esc(k.replace(/_/g, " "))}:</strong> ${esc(Array.isArray(x) ? x.join(", ") : x)}</li>`).join("")}</ul>`;
 }
 async function pollResults() {

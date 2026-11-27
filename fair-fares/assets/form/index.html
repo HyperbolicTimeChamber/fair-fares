@@ -13,7 +13,7 @@
   <nav class="steps" aria-label="Form pages">
     <button data-go="trip"><span class="n">1</span>Trip</button>
     <button data-go="travellers"><span class="n">2</span>Travellers</button>
-    <button data-go="check"><span class="n">3</span>Check &amp; preferences</button>
+    <button data-go="check"><span class="n">3</span><span class="long">Check &amp; preferences</span><span class="short">Checks</span></button>
     <button data-go="results"><span class="n">4</span>Results</button>
   </nav>
 </div></header>
@@ -40,7 +40,7 @@
     <label class="check" style="margin-top:8px"><input type="checkbox" id="alt-enabled"> Also check other airports if cheaper</label>
     <div id="alt-box" class="grid two" hidden>
       <div class="field"><label for="alt-hours">Max train/bus time to another airport</label>
-        <div class="inline"><span id="alt-hours-wrap" class="inline"><input id="alt-hours" type="number" min="1" max="48" step="0.5" inputmode="decimal" style="max-width:140px" aria-describedby="alt-hours-h"> <span>hours</span></span>
+        <div class="inline"><span id="alt-hours-wrap" class="inline nowrap"><input id="alt-hours" type="number" min="1" max="48" step="0.5" inputmode="decimal" style="max-width:140px" aria-describedby="alt-hours-h"> <span>hours</span></span>
         <label class="check"><input type="checkbox" id="alt-nolimit"> No limit</label></div>
         <span class="hint" id="alt-hours-h">"No limit" allows overnight buses and trains.</span></div>
       <div class="field"><label for="alt-saving">Minimum saving to be worth a longer route</label>
@@ -76,9 +76,10 @@
       <div class="field"><label for="w-earliest" id="l-earliest">Earliest day I can leave home</label><input id="w-earliest" type="date"></div>
       <div class="field"><label for="w-latest" id="l-latest">Latest day I must be back home</label><input id="w-latest" type="date"></div>
       <div class="field"><span class="label" id="nights-l">How many nights at the destination?</span>
-        <div class="inline" role="group" aria-labelledby="nights-l">
-          <input id="w-min" type="number" min="1" max="365" inputmode="numeric" style="max-width:90px" aria-label="Minimum nights">
-          <span id="w-max-wrap" class="inline">to <input id="w-max" type="number" min="1" max="365" inputmode="numeric" style="max-width:90px" aria-label="Maximum nights"></span> nights</div>
+        <div class="nights" role="group" aria-labelledby="nights-l">
+          <div class="field"><label for="w-min" class="sub">Min</label><input id="w-min" type="number" min="1" max="365" inputmode="numeric"></div>
+          <div class="field" id="w-max-wrap"><label for="w-max" class="sub">Max</label><input id="w-max" type="number" min="1" max="365" inputmode="numeric"></div>
+        </div>
         <label class="check"><input type="checkbox" id="w-tillend"> Or longer, up to the end of my window</label>
         <span class="hint" id="nights-hint"></span></div>
     </div>
@@ -186,14 +187,14 @@
     <p class="hint">Your answers below are the approvals for this run. Anything they don't cover is skipped safely and listed under "Needs your decision" on the results page.</p>
     <div class="grid two" id="u-box">
       <div class="field"><label for="u-prev">If an earlier run for this trip exists</label>
-        <select id="u-prev"><option value="fresh">Start a fresh search (keeps the old one for comparison)</option><option value="reuse">Only re-check the saved prices</option></select></div>
+        <select id="u-prev"><option value="fresh">Start fresh (keep the old one)</option><option value="reuse">Re-check saved prices only</option></select></div>
       <div class="field"><label for="u-docs">If the official re-check finds a document the form missed</label>
-        <select id="u-docs"><option value="add">Add its cost to every option and list it</option><option value="list">Only list it for me</option></select></div>
+        <select id="u-docs"><option value="add">Add its cost and list it</option><option value="list">Only list it</option></select></div>
       <div class="field"><label for="u-blocked">If a site shows a CAPTCHA or blocks the agent</label>
-        <select id="u-blocked"><option value="skip">Skip that site and carry on (always)</option></select>
+        <select id="u-blocked"><option value="skip">Skip the site and carry on</option></select>
         <span class="hint">The agent never gets around bot protection.</span></div>
       <div class="field"><label for="u-handoff">When results are ready</label>
-        <select id="u-handoff"><option value="wait">Wait for me to press "Take me to booking"</option><option value="top1">Also open the #1 pick at passenger details</option></select></div>
+        <select id="u-handoff"><option value="wait">Wait for me</option><option value="top1">Open the #1 pick for me</option></select></div>
     </div>
   </section>
 
