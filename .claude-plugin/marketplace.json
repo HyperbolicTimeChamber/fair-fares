@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "fair-fares",
+  "owner": {
+    "name": "HyperbolicTimeChamber",
+    "url": "https://github.com/HyperbolicTimeChamber"
+  },
+  "metadata": {
+    "description": "Fair Fares: find the cheapest door-to-door trip and get taken to the booking page."
+  },
+  "plugins": [
+    {
+      "name": "fair-fares",
+      "source": "./",
+      "strict": false,
+      "description": "Finds the cheapest door-to-door trip (flights, trains/buses to other airports, transfers, documents, bags, optional hotels) with a local form, a travel-document check, parallel searches and a hand-off to the booking page. Never books.",
+      "version": "1.2.0",
+      "author": { "name": "HyperbolicTimeChamber" },
+      "homepage": "https://github.com/HyperbolicTimeChamber/fair-fares",
+      "repository": "https://github.com/HyperbolicTimeChamber/fair-fares",
+      "license": "MIT",
+      "keywords": ["travel", "flights", "cheap-flights", "trains", "visa", "booking"],
+      "skills": ["./fair-fares"]
+    }
+  ]
+}

@@ -6,12 +6,25 @@ Works with Claude Code, Codex (app and CLI), Grok Build, Gemini CLI and Cursor. 
 
 ## Install
 
-```sh
-git clone <this repo> && cd <repo>
-./install.sh            # or: python3 install.py   (shows targets, asks before copying)
+Pick the route for your agent. Neither needs you to download the repo first.
+
+**Claude Code (recommended): plugin marketplace.** Inside Claude Code:
+
+```
+/plugin install fair-fares --marketplace HyperbolicTimeChamber/fair-fares
 ```
 
-It copies `fair-fares/` to each detected agent's skills folder:
+(Claude Code 2.1.275 or later. On older versions: `/plugin marketplace add HyperbolicTimeChamber/fair-fares`, then `/plugin install fair-fares@fair-fares`.) To update later: `/plugin marketplace update fair-fares`. Restart Claude Code after installing.
+
+**Any agent (Claude Code, Codex, Gemini CLI, Cursor and others): the skills command.**
+
+```
+npx skills add HyperbolicTimeChamber/fair-fares -g -a claude-code -a codex -a gemini-cli -a cursor
+```
+
+`-g` installs it for your whole user account (without it, the skill goes into the current project folder only). List only the agents you use; run the same command again to update.
+
+**From a copy of this repo:** `python install.py` (Windows) or `./install.sh` copies `fair-fares/` into each detected agent's folder:
 
 | Agent | Folder |
 |---|---|
@@ -22,9 +35,14 @@ It copies `fair-fares/` to each detected agent's skills folder:
 | Cursor | `~/.cursor/skills` |
 
 Options: `--yes`, `--only claude,codex`, `--all` (create folders even for agents not detected), `--uninstall`.
-Or with the skills CLI: `npx skills add <owner>/<repo>`.
 
 **Requirements:** Python 3.9+ (preferred; on Windows the command is usually `python`) or Node 18+, plus Playwright and its Chromium. Optional: Playwright MCP, your agent's browser plugin, the Kiwi.com connector (`https://mcp.kiwi.com`, free, no key), and a small model through your agent's CLI. The skill's setup check finds what's missing and offers to install it. It always asks first.
+
+### Staying up to date
+
+Every run starts with a quick update check (at most once every 6 hours). If GitHub has a newer version, the skill updates itself: Claude Code plugin installs update for the next session; copies made by the skills command or `install.py` are replaced in place; a git copy is updated with `git pull` unless you've edited it. Your settings and past searches are never touched.
+
+For maintainers: bump `fair-fares/version.json` and the `version` in `.claude-plugin/marketplace.json` together with every change, or installed copies won't see it as new.
 
 ## Use
 
@@ -57,6 +75,7 @@ fair-fares/
   references/              setup & portability, form & settings, preparation, search workflow,
                            CSV schema, merge/verify/output, booking step, data sources
 install.py / install.sh
+.claude-plugin/marketplace.json   Claude Code plugin catalog
 ```
 
 ## Data sources
