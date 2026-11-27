@@ -7,7 +7,9 @@ Consent banners: clicks "Reject all" (most private option).
 
   python3 gflights_scan.py --from BER --to GOI,GOX --earliest 2027-03-06 --latest 2027-04-25 \
       --min-nights 7 --max-nights 21 --adults 2 --children 8 --currency EUR --max-stops 2 \
-      --out RUN/results/A_gflights.csv [--max-queries 30] [--headless]
+      --out RUN/results/A_gflights.csv [--max-queries 30] [--headless] [--one-way]
+
+One way: pass --one-way; --earliest/--latest are then the range of departure dates (nights are ignored).
 
 Writes rows in the shared schema (flight_cost only; the lead agent adds the rest) and prints a short summary.
 """
@@ -17,7 +19,7 @@ from common import ASSETS
 from links import build
 
 COLS = (ASSETS / "results_schema.csv").read_text().strip().split(",")
-PRICE_RE = re.compile(r"From ([\d,\.]+) ([A-Za-z ]+?) round trip total|From ([\d,\.]+) ([A-Za-z ]+?)\.", re.I)
+PRICE_RE = re.compile(r"From ([\d,\.]+) ([A-Za-z ]+?) (?:round trip|one way)(?: total)?|From ([\d,\.]+) ([A-Za-z ]+?)\.", re.I)
 
 
 def date_pairs(earliest, latest, nmin, nmax, cap):
@@ -59,7 +61,14 @@ def main():
     frm, tos = g("--from").split(","), g("--to").split(",")
     adults, kids = int(g("--adults", 1)), [int(x) for x in (g("--children", "") or "").split(",") if x]
     cur, cap, max_stops = g("--currency", "EUR"), int(g("--max-queries", 30)), int(g("--max-stops", 9))
-    pairs = date_pairs(g("--earliest"), g("--latest"), int(g("--min-nights", 7)), int(g("--max-nights", 14)), cap)
+    one_way = "--one-way" in a
+    if one_way:
+        e, l = datetime.date.fromisoformat(g("--earliest")), datetime.date.fromisoformat(g("--latest"))
+        days = [(e + datetime.timedelta(days=i)).isoformat() for i in range((l - e).days + 1)]
+        random.shuffle(days)
+        pairs = [(d, None) for d in days[:cap]]
+    else:
+        pairs = date_pairs(g("--earliest"), g("--latest"), int(g("--min-nights", 7)), int(g("--max-nights", 14)), cap)
     jobs = [(f, t, o, r) for (o, r) in pairs for f in frm for t in tos][:cap]
     out = g("--out")
     rows, log, blocked = [], [], None
@@ -78,8 +87,9 @@ def main():
                 if "/sorry/" in page.url or page.get_by_text(re.compile("unusual traffic", re.I)).count():
                     blocked = f"Block/CAPTCHA at query {i + 1}; stopped."
                     break
-                page.wait_for_selector('[aria-label*="round trip total"]', timeout=25000)
-                labels = page.eval_on_selector_all('[aria-label*="round trip total"]', "els => els.map(e => e.getAttribute('aria-label'))")
+                sel = '[aria-label^="From "]' if one_way else '[aria-label*="round trip total"]'
+                page.wait_for_selector(sel, timeout=25000)
+                labels = page.eval_on_selector_all(sel, "els => els.map(e => e.getAttribute('aria-label'))")
             except Exception as ex:
                 log.append(f"{f}-{t} {o}/{r}: {ex.__class__.__name__}")
                 labels = []
@@ -90,12 +100,13 @@ def main():
                     continue
                 rows.append({c: "" for c in COLS} | {
                     "option_id": f"A-gf-{len(rows) + 1}", "source_agent": "A", "site_or_operator": "Google Flights",
-                    "route_summary": f"{f}→{t} {o} / {t}→{f} {r}", "airlines_out": d["airlines"], "airlines_back": d["airlines"],
-                    "depart_airport": f, "arrive_airport": t, "return_from_airport": t, "return_to_airport": f,
-                    "depart_datetime": o, "return_datetime": r,
-                    "nights": str((datetime.date.fromisoformat(r) - datetime.date.fromisoformat(o)).days),
+                    "route_summary": f"{f}→{t} {o}" + ("" if one_way else f" / {t}→{f} {r}"), "airlines_out": d["airlines"],
+                    "airlines_back": "" if one_way else d["airlines"],
+                    "depart_airport": f, "arrive_airport": t, "return_from_airport": "" if one_way else t,
+                    "return_to_airport": "" if one_way else f, "depart_datetime": o, "return_datetime": r or "",
+                    "nights": "" if one_way else str((datetime.date.fromisoformat(r) - datetime.date.fromisoformat(o)).days),
                     "layover_details": d["layovers"], "total_travel_time_out": d["duration"], "stops": str(d["stops"]),
-                    "ticket_type": "round_trip", "flight_cost": f"{d['price']:.2f}", "currency": cur,
+                    "ticket_type": "one_way" if one_way else "round_trip", "flight_cost": f"{d['price']:.2f}", "currency": cur,
                     "price_status": "fees_may_be_added", "link": url,
                     "checked_at": datetime.datetime.now().isoformat(timespec="minutes"),
                     "notes": "broad scan; outbound duration only; verify bags/fare type"})

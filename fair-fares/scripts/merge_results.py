@@ -18,6 +18,32 @@ COLS = (ASSETS / "results_schema.csv").read_text().strip().split(",")
 COST_PARTS = ["flight_cost", "ground_cost", "destination_transfer_cost", "hotel_cost", "document_costs",
               "transit_document_costs", "insurance_estimate", "bag_fees", "payment_fees", "extras_cost"]
 ALT_TYPES = {"separate_one_ways", "self_transfer", "open_jaw"}
+SEPARATE = {"separate_one_ways", "self_transfer"}
+
+
+def booking_parts(r):
+    """Separate bookings for this option, in the order to book them (hardest to replace first).
+    Subagents may fill booking_parts as 'Operator: what | Operator: what'; otherwise it is inferred."""
+    if r.get("booking_parts"):
+        return [p.strip() for p in r["booking_parts"].split("|") if p.strip()]
+    flights, ground, hotel = [], [], []
+    route_out = f"{r['depart_airport']}→{r['arrive_airport']}".strip("→")
+    route_back = f"{r['return_from_airport'] or r['arrive_airport']}→{r['return_to_airport'] or r['depart_airport']}".strip("→")
+    if r["ticket_type"] == "one_way" or not (r["return_datetime"] or r["airlines_back"] or r["return_from_airport"]):
+        flights.append(f"{r['site_or_operator'] or r['airlines_out'] or 'Flight'}: {route_out}")
+    elif r["ticket_type"] in SEPARATE:
+        flights.append(f"{r['airlines_out'] or 'Outbound flight'}: {route_out}")
+        flights.append(f"{r['airlines_back'] or r['airlines_out'] or 'Return flight'}: {route_back}")
+    else:
+        flights.append(f"{r['site_or_operator'] or r['airlines_out'] or 'Flights'}: {route_out} and back")
+    if r["positioning_flight_details"]:
+        flights.append(f"Positioning flight: {r['positioning_flight_details'][:60]}")
+    for g in (r["ground_out_details"], r["ground_back_details"]):
+        if g:
+            ground.append(f"Train/bus: {g[:60]}")
+    if r["hotel_name"] and r["ticket_type"] != "package":
+        hotel.append(f"Hotel: {r['hotel_name']}")
+    return flights + ground + hotel
 
 
 def num(v):
@@ -120,7 +146,7 @@ def main():
     rows = sorted(best.values(), key=lambda r: r["_total"])
     # Direct baseline: simple round trip from/to the closest airport, no ground legs or positioning flight.
     def is_direct(r):
-        return (r["ticket_type"] in ("round_trip", "") and (not closest or (r["depart_airport"].upper() == closest
+        return (r["ticket_type"] in ("round_trip", "one_way", "") and (not closest or (r["depart_airport"].upper() == closest
                 and (r["return_to_airport"] or r["depart_airport"]).upper() == closest))
                 and not r["ground_out_details"] and not r["positioning_flight_details"])
     directs = [r for r in rows if is_direct(r)]
@@ -146,7 +172,7 @@ def main():
         w.writerow(["rank", "bucket"] + COLS)
         for i, r in enumerate(main_rows + small, 1):
             w.writerow([i, r["_bucket"]] + [r[c] for c in COLS])
-    clean = lambda r: {**{c: r[c] for c in COLS}, "total": r["_total"], "alternative": r["_alt"]}
+    clean = lambda r: {**{c: r[c] for c in COLS}, "total": r["_total"], "alternative": r["_alt"], "parts": booking_parts(r)}
     out = {"generated_at": datetime.datetime.now().isoformat(timespec="seconds"), "currency": currency,
            "min_saving": min_saving, "closest_airport": closest, "direct": clean(direct) if direct else None,
            "top": [clean(r) for r in main_rows[:10]], "more": [clean(r) for r in main_rows[10:40]],

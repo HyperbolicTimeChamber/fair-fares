@@ -12,7 +12,7 @@ const DEFAULTS = () => ({
   version: 1,
   trip: { home_city: null, closest_airport: null, alternatives: { enabled: false, max_ground_hours: 6, no_limit: false, min_saving: "" },
     destination: null, destination_airports: [], stay_area: "",
-    window: { basis: "home", mode: "flexible", earliest: "", latest: "", min_nights: 7, max_nights: 14, till_end: false, leave: "", return: "" } },
+    window: { trip_type: "return", basis: "home", mode: "flexible", earliest: "", latest: "", min_nights: 7, max_nights: 14, till_end: false, leave: "", return: "" } },
   travellers: { adults: 1, children: 0, list: [], passport_mode: "same", passports: { "*": [{ country: "", expiry: "" }] } },
   documents: [],
   doccheck: { req_key: "", result: null, choices: {} },
@@ -136,6 +136,7 @@ function setupTrip() {
   bind("#w-max", (v) => { S.trip.window.max_nights = +v || ""; renderWindow(); });
   $("#w-tillend").addEventListener("change", (e) => { S.trip.window.till_end = e.target.checked; renderWindow(); autosave(); });
   $$("[data-basis]").forEach((b) => b.addEventListener("click", () => { S.trip.window.basis = b.dataset.basis; renderWindow(); autosave(); }));
+  $$("[data-trip]").forEach((b) => b.addEventListener("click", () => { S.trip.window.trip_type = b.dataset.trip; renderWindow(); autosave(); }));
 }
 function bind(sel, fn) { $(sel).addEventListener("input", (e) => { fn(e.target.type === "checkbox" ? e.target.checked : e.target.value); autosave(); }); }
 function addDestAirport(a) { if (!S.trip.destination_airports.some((x) => x.code === a[0])) S.trip.destination_airports.push(apObj(a)); renderDestAirports(); autosave(); }
@@ -160,19 +161,24 @@ const fmt = (iso, year) => {
 const nightsBetween = (a, b) => Math.round((new Date(b) - new Date(a)) / 864e5);
 function windowSpan() { const w = S.trip.window; return w.earliest && w.latest ? nightsBetween(w.earliest, w.latest) : 0; }
 function renderWindow() {
-  const w = S.trip.window, flex = w.mode === "flexible", dest = w.basis === "destination";
+  const w = S.trip.window, flex = w.mode === "flexible", dest = w.basis === "destination", oneway = w.trip_type === "oneway";
+  $$("[data-trip]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.trip === (w.trip_type || "return")));
+  $("#nights-box").hidden = oneway; $("#w-return-box").hidden = oneway;
   $$("[data-mode]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.mode === w.mode));
   $$("[data-basis]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.basis === w.basis));
   $("#win-flex").hidden = !flex; $("#win-exact").hidden = flex;
   const addD = (iso, n) => { const d = new Date(iso + "T12:00:00"); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
   const place = S.trip.destination?.name || "your destination";
   const exA = (flex ? w.earliest : w.leave) || "2027-03-06", exB = (flex ? w.latest : w.return) || "2027-04-25";
-  $("#basis-hint").innerHTML = dest
+  if (oneway) $("#basis-hint").innerHTML = dest
+    ? `<strong>Your dates are for arriving.</strong> You want to be in ${esc(place)} between these days. You might leave home the day before, for example ${esc(fmt(addD(exA, -1)))} to arrive on ${esc(fmt(exA))}. Choose this when you must be there by a certain day.`
+    : `<strong>Your dates are for leaving home.</strong> You can set off any day between these dates, and the journey may finish the next day. Choose this when the dates are when you're free to go.`;
+  else $("#basis-hint").innerHTML = dest
     ? `<strong>Travel happens outside your dates.</strong> Your dates are when you can be in ${esc(place)}. To be there from ${esc(fmt(exA))}, you might leave home on ${esc(fmt(addD(exA, -1)))}, and after leaving on ${esc(fmt(exB))} you might get home on ${esc(fmt(addD(exB, 1)))}. Choose this when the dates are fixed by something at the destination, like an event or a booking there.`
     : `<strong>Your travel days count inside your dates.</strong> You leave home on or after ${esc(fmt(exA))} and are back home by ${esc(fmt(exB))}. A long trip often takes about a day each way, so you get a day or two fewer nights in ${esc(place)} than the dates suggest. Choose this when the dates are your time off.`;
-  $("#l-earliest").textContent = dest ? "First day I can be at my destination" : "Earliest day I can leave home";
-  $("#l-latest").textContent = dest ? "Last day I can be at my destination" : "Latest day I must be back home";
-  $("#l-leave").textContent = dest ? "Arrive at my destination on" : "Leave home on";
+  $("#l-earliest").textContent = oneway ? (dest ? "Earliest day I can arrive" : "Earliest day I can leave home") : dest ? "First day I can be at my destination" : "Earliest day I can leave home";
+  $("#l-latest").textContent = oneway ? (dest ? "Latest day I can arrive" : "Latest day I can leave home") : dest ? "Last day I can be at my destination" : "Latest day I must be back home";
+  $("#l-leave").textContent = oneway ? (dest ? "Arrive on" : "Leave home on") : dest ? "Arrive at my destination on" : "Leave home on";
   $("#l-return").textContent = dest ? "Leave my destination on" : "Get back home on";
   // Keep the nights within the window.
   const span = windowSpan();
@@ -188,6 +194,20 @@ function renderWindow() {
     ? `You can be there for up to ${span} nights. Travel days are extra.`
     : `${span} nights from leaving home to getting back, travel days included. Count only the nights you want at the destination.`) : "";
   let msg = "Pick your dates.", ok = false;
+  if (oneway) {
+    if (flex && w.earliest && w.latest) {
+      const y = new Date(w.earliest).getFullYear() !== new Date(w.latest).getFullYear();
+      ok = span >= 0;
+      msg = !ok ? "The second date can't be before the first." : dest
+        ? `One way: arrive in ${place} any day from ${fmt(w.earliest, y)} to ${fmt(w.latest, true)}. The journey can start the day before.`
+        : `One way: leave home any day from ${fmt(w.earliest, y)} to ${fmt(w.latest, true)}.`;
+    } else if (!flex && w.leave) { ok = true; msg = dest ? `One way: arrive in ${place} on ${fmt(w.leave, true)}. The journey can start the day before.` : `One way: leave home on ${fmt(w.leave, true)}.`; }
+    $("#win-summary").textContent = msg;
+    const tl1 = $("#timeline");
+    if (!ok || !flex || span <= 0) { tl1.innerHTML = ""; return; }
+    tl1.innerHTML = `<div class="tl-track"></div><div class="tl-trip" style="left:0;width:100%;opacity:.35"></div><span class="tl-lab" style="left:0">${esc(fmt(w.earliest))}</span><span class="tl-lab" style="right:0">${esc(fmt(w.latest))}</span>`;
+    return;
+  }
   if (flex && w.earliest && w.latest) {
     const y = new Date(w.earliest).getFullYear() !== new Date(w.latest).getFullYear();
     const maxN = w.till_end ? span : Math.min(w.max_nights || span, span);
@@ -320,7 +340,7 @@ function docRequest() {
   return {
     destination: S.trip.destination?.country || "",
     earliest_departure: w.mode === "flexible" ? w.earliest : w.leave,
-    return_by: w.mode === "flexible" ? w.latest : w.return,
+    return_by: w.trip_type === "oneway" ? (w.mode === "flexible" ? w.latest : w.leave) : w.mode === "flexible" ? w.latest : w.return,
     travellers: t.list.map((x) => ({ id: x.id, name: tName(x), child: x.child, passports: (t.passport_mode === "same" ? t.passports["*"] : t.passports[x.id] || []).filter((p) => p.country) })),
     documents: S.documents.filter((d) => d.applies_to.length).map((d) => ({ id: d.id, label: d.label, applies_to: d.applies_to })),
   };
@@ -424,7 +444,12 @@ function problems() {
   if (!T.home_city) out.push(["trip", "Choose your home city."]);
   if (!T.closest_airport) out.push(["trip", "Choose your closest airport."]);
   if (!T.destination) out.push(["trip", "Choose a destination."]);
-  if (W.mode === "flexible") {
+  if (W.trip_type === "oneway") {
+    if (W.mode === "flexible") {
+      if (!(W.earliest && W.latest)) out.push(["trip", "Pick both dates."]);
+      else if (nightsBetween(W.earliest, W.latest) < 0) out.push(["trip", "The second date can't be before the first."]);
+    } else if (!W.leave) out.push(["trip", "Pick your travel date."]);
+  } else if (W.mode === "flexible") {
     if (!(W.earliest && W.latest)) out.push(["trip", "Pick both dates."]);
     else if (nightsBetween(W.earliest, W.latest) <= 0) out.push(["trip", "The second date must be after the first."]);
     else if (!W.min_nights) out.push(["trip", "Say how many nights you want to stay."]);
@@ -446,6 +471,10 @@ async function start() {
 
 /* ---------- results ---------- */
 let pollTimer;
+const parts = (o) => (Array.isArray(o.parts) && o.parts.length ? o.parts : []);
+const bookLabel = (o) => (parts(o).length > 1 ? `Take Me to Booking (${parts(o).length} Tabs)` : "Take Me to Booking");
+const bookOrder = (o) => parts(o).length > 1
+  ? `<div class="book-order"><strong>Booked separately, opened in this order</strong> (hardest to replace first):<ol>${parts(o).map((p) => `<li>${esc(p)}</li>`).join("")}</ol></div>` : "";
 const n0 = (v) => (v === "" || v == null || isNaN(+v) ? "" : Math.round(+v).toLocaleString("en-GB"));
 function optionRow(o, cur) {
   const parts = [["Flights", o.flight_cost], ["Ground", o.ground_cost], ["Positioning flight", o.positioning_flight_details ? "" : null], ["Destination transfers", o.destination_transfer_cost], ["Hotel", o.hotel_cost],
@@ -457,10 +486,10 @@ function optionRow(o, cur) {
     <details><summary>Details &amp; cost breakdown</summary><p>${esc(o.airlines_out)}${o.airlines_back && o.airlines_back !== o.airlines_out ? " / " + esc(o.airlines_back) : ""} · ${esc(o.stops)} stops · out ${esc(o.total_travel_time_out)} · back ${esc(o.total_travel_time_back)}</p>
     ${o.layover_details ? `<p>Layovers: ${esc(o.layover_details)}</p>` : ""}${o.ground_out_details ? `<p>Ground out: ${esc(o.ground_out_details)}</p>` : ""}${o.ground_back_details ? `<p>Ground back: ${esc(o.ground_back_details)}</p>` : ""}${o.positioning_flight_details ? `<p>Positioning: ${esc(o.positioning_flight_details)}</p>` : ""}
     ${o.buffers_and_delay_basis ? `<p>Buffers: ${esc(o.buffers_and_delay_basis)}</p>` : ""}<table class="results">${parts.map(([k, v]) => `<tr><td>${k}</td><td class="num">${n0(v)} ${esc(cur)}</td></tr>`).join("")}</table>
-    ${o.risks ? `<p class="warning">Risks: ${esc(o.risks)}</p>` : ""}${o.notes ? `<p class="muted">${esc(o.notes)}</p>` : ""}<p class="muted">Original: ${esc(o.original_price_and_currency)} · rate ${esc(o.exchange_rate_and_date)} · checked ${esc(o.checked_at)}</p></details></td>
-    <td>${esc(o.depart_datetime)}<br>${esc(o.return_datetime)}${o.nights ? `<div class="muted">${esc(o.nights)} nights</div>` : ""}</td>
+    ${bookOrder(o)}${o.risks ? `<p class="warning">Risks: ${esc(o.risks)}</p>` : ""}${o.notes ? `<p class="muted">${esc(o.notes)}</p>` : ""}<p class="muted">Original: ${esc(o.original_price_and_currency)} · rate ${esc(o.exchange_rate_and_date)} · checked ${esc(o.checked_at)}</p></details></td>
+    <td>${esc(o.depart_datetime)}${o.return_datetime ? `<br>${esc(o.return_datetime)}` : `<div class="muted">One way</div>`}${o.nights ? `<div class="muted">${esc(o.nights)} nights</div>` : ""}</td>
     <td class="num"><span class="price" style="font-size:1.1rem">${n0(o.total)} ${esc(cur)}</span><div class="muted">${saving}${extra}</div><span class="status ${o.price_status === "confirmed" ? "s-ok" : "s-risk"}">${o.price_status === "confirmed" ? "Confirmed" : "Fees may be added"}</span></td>
-    <td><button type="button" class="btn small primary" data-book="${esc(o.option_id)}">Take Me to Booking</button></td></tr>`;
+    <td><button type="button" class="btn small primary" data-book="${esc(o.option_id)}">${bookLabel(o)}</button></td></tr>`;
 }
 function table(list, cur) { return `<div class="scroll-x"><table class="results"><thead><tr><th>Route</th><th>Dates</th><th style="text-align:right">Total, all travellers</th><th></th></tr></thead><tbody>${list.map((o) => optionRow(o, cur)).join("")}</tbody></table></div>`; }
 function block(v) {
@@ -477,6 +506,7 @@ async function pollResults() {
   $("#r-progress").innerHTML = pr ? `${pr.done ? "" : `<span class="spinner"></span>`}<div><strong>${esc(pr.phase || "")}</strong> ${esc(pr.message || "")}<div class="muted">${esc(pr.updated_at || "")}</div></div>` : `<span class="spinner"></span> Waiting for the agent to start the search…`;
   if (res) {
     const cur = res.currency, rep = res.report || {};
+    lastResults = res;
     S._holidays = rep.holidays || []; renderWindow();
     const byId = Object.fromEntries([...res.top, ...(res.more || []), ...res.smaller_savings, ...(res.miles || [])].map((o) => [o.option_id, o]));
     const top3 = (rep.top3 && rep.top3.length ? rep.top3 : res.top.slice(0, 3).map((o) => ({ option_id: o.option_id }))).map((t) => ({ ...t, o: byId[t.option_id] })).filter((t) => t.o);
@@ -485,7 +515,7 @@ async function pollResults() {
     if (rep.documents) h += `<section class="card"><h2>Documents</h2>${block(rep.documents)}</section>`;
     if (rep.season) h += `<section class="card"><h2>Season &amp; weather</h2>${block(rep.season)}</section>`;
     if (top3.length) h += `<h2 style="margin-top:20px">Top picks</h2><div class="picks">${top3.map((t, i) => `<div class="pick"><span class="muted">#${i + 1}</span><strong>${esc(t.o.route_summary)}</strong><span class="price">${n0(t.o.total)} ${esc(cur)}</span>
-      <span>${esc(t.reason || "")}</span>${t.risks ? `<span class="warning">${esc(t.risks)}</span>` : ""}<button type="button" class="btn primary" data-book="${esc(t.o.option_id)}">Take Me to Booking</button></div>`).join("")}</div>`;
+      <span>${esc(t.reason || "")}</span>${t.risks ? `<span class="warning">${esc(t.risks)}</span>` : ""}${parts(t.o).length > 1 ? `<span class="muted">${parts(t.o).length} separate bookings: ${esc(parts(t.o).map((p) => p.split(":")[0]).join(", "))}</span>` : ""}<button type="button" class="btn primary" data-book="${esc(t.o.option_id)}">${bookLabel(t.o)}</button></div>`).join("")}</div>`;
     if (res.direct) h += `<p class="muted">Direct round trip from ${esc(res.closest_airport)}: ${n0(res.direct.total)} ${esc(cur)} (${esc(res.direct.route_summary)}).</p>`;
     h += `<section class="card"><h2>Top ${res.top.length} door-to-door options</h2>${table(res.top, cur)}</section>`;
     if (res.miles?.length) h += `<section class="card"><h2>Miles &amp; points options</h2>${table(res.miles, cur)}</section>`;
@@ -501,8 +531,14 @@ async function pollResults() {
   try { const bs = await api("/api/booking-status"); if (bs.message) toast(bs.message, 6000); } catch {}
   if (!(pr && pr.done && res)) pollTimer = setTimeout(pollResults, 4000);
 }
+let lastResults = null;
 async function book(id) {
-  try { await api("/api/book", { option_id: id }); toast("Sent to the agent: it re-opens the site, re-selects these flights and stops at passenger details for you.", 7000); }
+  const o = lastResults && [...lastResults.top, ...(lastResults.more || []), ...lastResults.smaller_savings, ...(lastResults.miles || [])].find((x) => x.option_id === id);
+  const n = o ? parts(o).length : 1;
+  const msg = n > 1
+    ? `Sent to the agent: it opens ${n} tabs (${parts(o).map((p) => p.split(":")[0]).join(", ")}), selects each part and stops at passenger details in each.`
+    : "Sent to the agent: it re-opens the site, re-selects these flights and stops at passenger details for you.";
+  try { await api("/api/book", { option_id: id }); toast(msg, 8000); }
   catch (e) { toast("Couldn't reach the agent: " + e.message); }
 }
 

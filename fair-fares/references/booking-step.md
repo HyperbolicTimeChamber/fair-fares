@@ -8,7 +8,7 @@ Trigger: a `book` event (`wait_event.py --types book`) with `option_id`, or, whe
    - Re-select the exact flights (same flight numbers/times), the same fare type, and the chosen bags if the site offers them before passenger details.
    - Stop at the passenger-details page. Do not type anything there unless the user enabled "enter details" and confirms now; never passport or payment details.
 3. If the price changed, tell the user old vs new **before** handing over (chat and `booking_status.json`), and update the CSV row.
-4. Separate-ticket trips: open each part in its own tab in a sensible order, usually the hardest-to-replace leg first (e.g. the long-haul flight, then the positioning flight, then the train/bus, then the hotel). Say the order and why.
+4. Separate-ticket trips: open each part in its own tab in the order of the option's `booking_parts` (hardest to replace first: long-haul flight, then positioning flight, then train/bus, then hotel). The results page has already told the user how many tabs to expect ("Take Me to Booking (3 Tabs)"). Say the order and why.
 5. Hand over: "Your browser is at passenger details on <site> for <flights>, <price>. Check <checkout item> before paying."
 
 No browser plugin or it is blocked: give direct links (`python3 scripts/links.py --from … --to … --out … --back … --adults … --children ages --currency …`) plus the airline/operator site, and the exact flights to pick.

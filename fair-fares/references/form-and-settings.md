@@ -16,6 +16,7 @@ Server API (POSTs need header `X-Fair-Fares: 1`): `GET /api/settings`, `POST /ap
     "destination_airports": [ {code,...} ],        // empty = any airport serving the destination
     "stay_area": "text",                          // used to price the airport transfer
     "window": {
+      "trip_type": "return|oneway",  // oneway: no return date and no nights; earliest/latest (or leave) are departure dates (basis home) or arrival dates (basis destination)
       "basis": "home|destination",   // home = dates include travel days; destination = dates are only the days at the destination
       "mode": "flexible|exact", "earliest","latest","min_nights","max_nights",
       "till_end": bool,              // true = no upper limit: stay can last up to the whole window (ignore max_nights)

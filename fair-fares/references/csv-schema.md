@@ -20,7 +20,7 @@ Header: `assets/results_schema.csv` (copied to `RUN/results/SCHEMA.csv`). One ro
 | stops | Stops on the worst direction |
 | baggage_included, bag_fees | What's included; fees for the chosen bags (all travellers) |
 | fare_type, change_fee | e.g. `Economy Light`, change fee if known |
-| ticket_type | `round_trip` / `open_jaw` / `separate_one_ways` / `self_transfer` / `package` |
+| ticket_type | `round_trip` / `one_way` / `open_jaw` / `separate_one_ways` / `self_transfer` / `package` (a one-way trip uses `one_way` and leaves the return columns empty) |
 | stopover_option | Free/cheap stopover offered |
 | flight_cost, ground_cost, destination_transfer_cost, hotel_name, hotel_cost | Components |
 | document_costs | Fees for documents the user chose "Add cost to estimate" |
@@ -34,4 +34,5 @@ Header: `assets/results_schema.csv` (copied to `RUN/results/SCHEMA.csv`). One ro
 | coupon_or_offer, miles_option | Codes/card offers; award price |
 | link | Search or deep link (never a personal/session URL with details in it) |
 | checked_at | ISO time of the last price check |
+| booking_parts | Separate bookings in the order to make them, hardest to replace first: `KLM: AMS→GOI \| IndiGo: GOI→BER \| Deutsche Bahn: BER→AMS`. Leave empty for a single booking; the merge infers it if missing. The results page shows "Take Me to Booking (3 Tabs)" |
 | risks, notes | Self-transfer, tight buffer, FX fee, last-seat pricing, disruptions… |

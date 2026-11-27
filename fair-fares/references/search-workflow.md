@@ -17,6 +17,7 @@
 - **destination**: the dates are days at the destination. Arrival at the destination (after the airport transfer) must be on or after `earliest`, and departure from it on or before `latest`; travel happens outside. Search outbound flights departing up to 1–2 days before `earliest` (long-haul or overnight) and returns landing home after `latest`.
 - Exact mode works the same way with `leave`/`return`.
 - `till_end: true` means no maximum stay: use `max_nights` = the full window length.
+- **One way** (`trip_type: oneway`): there is no return and no nights. With basis `home`, `earliest`–`latest` (or `leave`) are the days the journey may start; with basis `destination`, they are the days the user must arrive. Search one-way fares only (`ticket_type = one_way`, return columns empty); still compare airports, ground legs and positioning flights, and compare a one-way ticket with the outbound half of cheap return fares only when the airline allows it (some charge no-show fees for unused returns: note that in `risks`). `gflights_scan.py --one-way`.
 Tell the subagents which rule applies and the resulting flight-date ranges.
 
 ## Phase 1: broad scan (alone, first)

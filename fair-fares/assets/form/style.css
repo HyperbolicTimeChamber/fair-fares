@@ -180,3 +180,5 @@ select { text-overflow: ellipsis; }
 /* buttons: label centred */
 .btn { justify-content: center; text-align: center; }
 .pick .btn { margin-top: auto; }
+.book-order { margin: 8px 0; padding: 8px 12px; border-radius: 8px; background: var(--info-bg); font-size: .9rem; }
+.book-order ol { margin: 4px 0 0; padding-left: 20px; }
