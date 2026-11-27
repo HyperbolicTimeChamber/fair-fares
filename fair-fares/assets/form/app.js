@@ -277,7 +277,8 @@ function docRows(kind, docs) {
     docs.map((d) => {
       const held = (S.documents.find((x) => x.id === d.id) || {}).applies_to || [];
       const all = people.length && people.every((p) => held.includes(p.id));
-      return `<tr><th scope="row" style="font-weight:500">${esc(d.label)}</th><td><label class="cell"><input type="checkbox" data-all="${esc(d.id)}" ${all ? "checked" : ""} aria-label="${esc(d.label)}: everyone"></label></td>` +
+      const some = !all && people.some((p) => held.includes(p.id));
+      return `<tr><th scope="row" style="font-weight:500">${esc(d.label)}</th><td><label class="cell"><input type="checkbox" data-all="${esc(d.id)}" ${all ? "checked" : ""} ${some ? 'data-partial="1" aria-checked="mixed"' : ""} aria-label="${esc(d.label)}: everyone"></label></td>` +
         people.map((p) => `<td><label class="cell"><input type="checkbox" data-doc="${esc(d.id)}" data-who="${p.id}" ${held.includes(p.id) ? "checked" : ""} aria-label="${esc(d.label)}: ${esc(tName(p))}"></label></td>`).join("") +
         (kind === "other" ? `<td><button type="button" class="btn small" data-docrm="${esc(d.id)}" aria-label="Remove ${esc(d.label)}">×</button></td>` : "") + "</tr>";
     }).join("") + "</tbody>";
@@ -289,6 +290,7 @@ function renderDocGrids() {
   $("#otherdocs").innerHTML = docRows("other", other);
   const upsert = (id) => { let d = S.documents.find((x) => x.id === id); if (!d) { const src = dd.find((x) => x.id === id) || other.find((x) => x.id === id); d = { id, label: src?.label || id, kind: "destination", applies_to: [] }; S.documents.push(d); } return d; };
   $$("[data-doc]").forEach((c) => c.addEventListener("change", () => { const d = upsert(c.dataset.doc); d.applies_to = d.applies_to.filter((x) => x !== c.dataset.who); if (c.checked) d.applies_to.push(c.dataset.who); renderDocGrids(); autosave(); }));
+  $$("[data-all][data-partial]").forEach((c) => (c.indeterminate = true));
   $$("[data-all]").forEach((c) => c.addEventListener("change", () => { const d = upsert(c.dataset.all); d.applies_to = c.checked ? S.travellers.list.map((p) => p.id) : []; renderDocGrids(); autosave(); }));
   $$("[data-docrm]").forEach((b) => b.addEventListener("click", () => { S.documents = S.documents.filter((x) => x.id !== b.dataset.docrm); renderDocGrids(); autosave(); }));
 }
