@@ -1,4 +1,4 @@
-# Booking hand-off ("Take me to booking")
+# Booking hand-off ("Take Me to Booking")
 
 Trigger: a `book` event (`wait_event.py --types book`) with `option_id`, or, when `unattended.handoff` is `top1`, the #1 pick right after results are ready. Find the row in `RUN/all_options.csv`.
 

@@ -36,7 +36,7 @@ Ask your agent something like *"find me the cheapest way from Berlin to Goa in M
 4. **Search**: runs a broad date scan (Kiwi.com, or a low-volume Google Flights script) first. Then it searches in parallel: comparison sites, airlines direct, alternative airports with ground transport, hub routing, hotels, and transfers. It uses subagents where your agent has them.
 5. **Merge & verify**: ranks options by total door-to-door cost for everyone, then checks the top 10 for price, transit visas and disruptions.
 6. **Results**: shows the top picks, the top 10 with cost breakdowns, miles options and smaller savings on the form's results page and in chat. Each run is kept in `./fair-fares-runs/<destination>-<date>/` with `all_options.csv`.
-7. **Take me to booking**: your agent's browser re-selects the exact flights and stops at passenger details for you.
+7. **Take Me to Booking**: your agent's browser re-selects the exact flights and stops at passenger details for you.
 
 Your settings are kept in `~/.fair-fares/`.
 

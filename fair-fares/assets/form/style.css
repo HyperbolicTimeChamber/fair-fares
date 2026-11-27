@@ -176,3 +176,7 @@ select { text-overflow: ellipsis; }
 .stepper button:focus-visible { outline-offset: -3px; border-radius: 9px; }
 .stepper button:hover { background: var(--accent-soft); }
 .stepper output { padding: 0 6px; }
+
+/* buttons: label centred */
+.btn { justify-content: center; text-align: center; }
+.pick .btn { margin-top: auto; }

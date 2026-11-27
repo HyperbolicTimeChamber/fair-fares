@@ -460,7 +460,7 @@ function optionRow(o, cur) {
     ${o.risks ? `<p class="warning">Risks: ${esc(o.risks)}</p>` : ""}${o.notes ? `<p class="muted">${esc(o.notes)}</p>` : ""}<p class="muted">Original: ${esc(o.original_price_and_currency)} · rate ${esc(o.exchange_rate_and_date)} · checked ${esc(o.checked_at)}</p></details></td>
     <td>${esc(o.depart_datetime)}<br>${esc(o.return_datetime)}${o.nights ? `<div class="muted">${esc(o.nights)} nights</div>` : ""}</td>
     <td class="num"><span class="price" style="font-size:1.1rem">${n0(o.total)} ${esc(cur)}</span><div class="muted">${saving}${extra}</div><span class="status ${o.price_status === "confirmed" ? "s-ok" : "s-risk"}">${o.price_status === "confirmed" ? "Confirmed" : "Fees may be added"}</span></td>
-    <td><button type="button" class="btn small primary" data-book="${esc(o.option_id)}">Take me to booking</button></td></tr>`;
+    <td><button type="button" class="btn small primary" data-book="${esc(o.option_id)}">Take Me to Booking</button></td></tr>`;
 }
 function table(list, cur) { return `<div class="scroll-x"><table class="results"><thead><tr><th>Route</th><th>Dates</th><th style="text-align:right">Total, all travellers</th><th></th></tr></thead><tbody>${list.map((o) => optionRow(o, cur)).join("")}</tbody></table></div>`; }
 function block(v) {
@@ -485,7 +485,7 @@ async function pollResults() {
     if (rep.documents) h += `<section class="card"><h2>Documents</h2>${block(rep.documents)}</section>`;
     if (rep.season) h += `<section class="card"><h2>Season &amp; weather</h2>${block(rep.season)}</section>`;
     if (top3.length) h += `<h2 style="margin-top:20px">Top picks</h2><div class="picks">${top3.map((t, i) => `<div class="pick"><span class="muted">#${i + 1}</span><strong>${esc(t.o.route_summary)}</strong><span class="price">${n0(t.o.total)} ${esc(cur)}</span>
-      <span>${esc(t.reason || "")}</span>${t.risks ? `<span class="warning">${esc(t.risks)}</span>` : ""}<button type="button" class="btn primary" data-book="${esc(t.o.option_id)}">Take me to booking</button></div>`).join("")}</div>`;
+      <span>${esc(t.reason || "")}</span>${t.risks ? `<span class="warning">${esc(t.risks)}</span>` : ""}<button type="button" class="btn primary" data-book="${esc(t.o.option_id)}">Take Me to Booking</button></div>`).join("")}</div>`;
     if (res.direct) h += `<p class="muted">Direct round trip from ${esc(res.closest_airport)}: ${n0(res.direct.total)} ${esc(cur)} (${esc(res.direct.route_summary)}).</p>`;
     h += `<section class="card"><h2>Top ${res.top.length} door-to-door options</h2>${table(res.top, cur)}</section>`;
     if (res.miles?.length) h += `<section class="card"><h2>Miles &amp; points options</h2>${table(res.miles, cur)}</section>`;
