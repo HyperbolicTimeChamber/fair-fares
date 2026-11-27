@@ -64,13 +64,13 @@
   <section class="card"><h2>When</h2>
     <div class="field"><span class="label" id="basis-l">What do your dates mean?</span>
       <div class="seg" role="group" aria-labelledby="basis-l">
-        <button type="button" data-basis="home" aria-pressed="true">They include my travel days</button>
-        <button type="button" data-basis="destination" aria-pressed="false">They're only my days at the destination</button>
+        <button type="button" data-basis="home" aria-pressed="true">They Include My Travel Days</button>
+        <button type="button" data-basis="destination" aria-pressed="false">They're Only My Days at the Destination</button>
       </div>
       <p class="note" id="basis-hint" style="margin:8px 0 0"></p></div>
     <div class="seg" role="group" aria-label="Date type" style="margin-top:14px">
-      <button type="button" data-mode="flexible" aria-pressed="true">My dates are flexible</button>
-      <button type="button" data-mode="exact" aria-pressed="false">I have exact dates</button>
+      <button type="button" data-mode="flexible" aria-pressed="true">My Dates Are Flexible</button>
+      <button type="button" data-mode="exact" aria-pressed="false">I Have Exact Dates</button>
     </div>
     <div id="win-flex" class="grid three" style="margin-top:14px">
       <div class="field"><label for="w-earliest" id="l-earliest">Earliest day I can leave home</label><input id="w-earliest" type="date"></div>
@@ -108,8 +108,8 @@
   </section>
   <section class="card"><h2>Passports</h2>
     <div class="seg" role="group" aria-label="Passport entry">
-      <button type="button" data-pp="same" aria-pressed="true">Same for everyone</button>
-      <button type="button" data-pp="per" aria-pressed="false">Per traveller</button>
+      <button type="button" data-pp="same" aria-pressed="true">Same for Everyone</button>
+      <button type="button" data-pp="per" aria-pressed="false">Per Traveller</button>
     </div>
     <div id="pp-list" class="grid" style="margin-top:14px"></div>
   </section>
@@ -148,7 +148,7 @@
         <div class="inline"><label class="check"><input type="checkbox" id="p-avoid-overnight"> Overnight layovers</label>
         <label class="check"><input type="checkbox" id="p-avoid-early"> Very early departures (before 06:00)</label></div></div>
       <div class="field span2"><span class="label" id="ff-l">Fare flexibility</span>
-        <div class="seg" role="group" aria-labelledby="ff-l"><button type="button" data-flex="cheapest" aria-pressed="true">Cheapest only</button><button type="button" data-flex="changeable" aria-pressed="false">Show changeable fares too</button></div></div>
+        <div class="seg" role="group" aria-labelledby="ff-l"><button type="button" data-flex="cheapest" aria-pressed="true">Cheapest Only</button><button type="button" data-flex="changeable" aria-pressed="false">Show Changeable Fares Too</button></div></div>
     </div>
   </section>
 
@@ -157,7 +157,7 @@
       <div class="field span2"><span class="label" id="buf-l">Buffer style</span>
         <div class="seg" role="group" aria-labelledby="buf-l">
           <button type="button" data-buf="relaxed" aria-pressed="false">Relaxed</button><button type="button" data-buf="standard" aria-pressed="true">Standard</button>
-          <button type="button" data-buf="extra" aria-pressed="false">Extra safe</button><button type="button" data-buf="custom" aria-pressed="false">Custom</button></div>
+          <button type="button" data-buf="extra" aria-pressed="false">Extra Safe</button><button type="button" data-buf="custom" aria-pressed="false">Custom</button></div>
         <div class="inline" id="buf-custom" hidden><input id="buf-min" type="number" min="15" step="15" style="max-width:120px" aria-label="Custom buffer minutes"> minutes on top of the minimum connection time</div>
         <span class="hint">Buffers add the published delay record of each train, bus or airline to a base minimum.</span></div>
       <div class="field"><label for="p-cur">Currency</label><input id="p-cur" type="text" list="cur-list" autocomplete="off" placeholder="EUR"><datalist id="cur-list"></datalist>
