@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Quick update check, run at the start of every fair-fares run.
 
-  python3 update_check.py            -> check only (prints JSON)
-  python3 update_check.py --apply    -> check, and update if a newer version is on GitHub
+  python3 update_check.py            -> check only (prints JSON); never changes anything
+  python3 update_check.py --apply    -> update to the newer version (run only after the user said yes)
+  python3 update_check.py --decline  -> remember that the user said no to the newer version (not asked again for it)
   python3 update_check.py --force    -> ignore the 6-hour "checked recently" cache
 
 Compares fair-fares/version.json here with the copy on GitHub (main branch). How it updates
@@ -14,7 +15,7 @@ depends on how the skill was installed:
 Your settings and runs live outside the skill folder (~/.fair-fares, ./fair-fares-runs) and are never touched.
 Never blocks a run: offline, slow or failed checks just report and carry on.
 
-Status values: up_to_date | updated | updated_next_session | update_available | offline | skipped_recent | failed
+Status values: up_to_date | update_available | updated | updated_next_session | declined | offline | skipped_recent | failed
 """
 import io, json, os, pathlib, shutil, subprocess, sys, tarfile, tempfile, time, urllib.request
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -109,12 +110,22 @@ def update_copy():
     return "updated", "Updated from GitHub."
 
 
+HOW = {"plugin": "Claude Code's plugin manager updates it; the new version loads in the next session.",
+       "git": "It runs git pull in your copy (only if you haven't edited it).",
+       "copy": "It downloads the new version from GitHub and replaces the skill's files. Your settings and past searches aren't touched."}
+
+
 def main():
     a = sys.argv[1:]
     local = read_json(SKILL_DIR / "version.json", {}) or {}
     cache = read_json(CACHE, {}) or {}
     out = {"local": local.get("version"), "install": install_kind()}
-    if "--force" not in a and time.time() - cache.get("at", 0) < RECENT and cache.get("local") == local.get("version"):
+    if "--decline" in a:
+        cache["declined"] = cache.get("remote")
+        write_json(CACHE, cache)
+        out.update(status="declined", remote=cache.get("remote"), message="OK, staying on this version. You won't be asked about this one again.")
+        print(json.dumps(out)); return 0
+    if "--apply" not in a and "--force" not in a and time.time() - cache.get("at", 0) < RECENT and cache.get("local") == local.get("version"):
         out.update(status="skipped_recent", remote=cache.get("remote"), message="Checked in the last 6 hours.")
         print(json.dumps(out)); return 0
     try:
@@ -124,12 +135,15 @@ def main():
         print(json.dumps(out)); return 0
     out["remote"] = remote.get("version")
     out["notes"] = remote.get("notes", "")
-    write_json(CACHE, {"at": time.time(), "local": local.get("version"), "remote": remote.get("version")})
+    write_json(CACHE, {"at": time.time(), "local": local.get("version"), "remote": remote.get("version"), "declined": cache.get("declined")})
     if vtuple(remote.get("version")) <= vtuple(local.get("version")):
         out.update(status="up_to_date", message="You have the latest version.")
         print(json.dumps(out)); return 0
     if "--apply" not in a:
-        out.update(status="update_available", message="A newer version is available.")
+        if cache.get("declined") == remote.get("version"):
+            out.update(status="declined", message="The user already said no to this version.")
+        else:
+            out.update(status="update_available", how=HOW[out["install"]], message=f"Version {remote.get('version')} is available (you have {local.get('version')}).")
         print(json.dumps(out)); return 0
     try:
         status, msg = {"plugin": update_plugin, "git": update_git, "copy": update_copy}[out["install"]]()

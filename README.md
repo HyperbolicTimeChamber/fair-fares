@@ -40,7 +40,7 @@ Options: `--yes`, `--only claude,codex`, `--all` (create folders even for agents
 
 ### Staying up to date
 
-Every run starts with a quick update check (at most once every 6 hours). If GitHub has a newer version, the skill updates itself: Claude Code plugin installs update for the next session; copies made by the skills command or `install.py` are replaced in place; a git copy is updated with `git pull` unless you've edited it. Your settings and past searches are never touched.
+Every run starts with a quick update check (at most once every 6 hours). If GitHub has a newer version, the skill tells you what's new and **asks before updating**. Say no and it won't ask about that version again. If you say yes: Claude Code plugin installs update for the next session; copies made by the skills command or `install.py` are replaced in place; a git copy is updated with `git pull` unless you've edited it. Your settings and past searches are never touched.
 
 For maintainers: bump `fair-fares/version.json` and the `version` in `.claude-plugin/marketplace.json` together with every change, or installed copies won't see it as new.
 
