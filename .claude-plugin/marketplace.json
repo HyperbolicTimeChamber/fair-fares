@@ -14,7 +14,7 @@
       "source": "./",
       "strict": false,
       "description": "Finds the cheapest door-to-door trip (flights, trains/buses to other airports, transfers, documents, bags, optional hotels) with a local form, a travel-document check, parallel searches and a hand-off to the booking page. Never books.",
-      "version": "1.2.1",
+      "version": "1.2.2",
       "author": { "name": "HyperbolicTimeChamber" },
       "homepage": "https://github.com/HyperbolicTimeChamber/fair-fares",
       "repository": "https://github.com/HyperbolicTimeChamber/fair-fares",

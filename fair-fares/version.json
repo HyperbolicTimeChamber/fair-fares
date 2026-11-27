@@ -1,4 +1,4 @@
 {
- "version": "1.2.1",
- "notes": "The start-of-run update check now asks before updating."
+ "version": "1.2.2",
+ "notes": "Windows: setup check finds the right Python (avoids the Microsoft Store python3 shortcut); visa list isn't flagged right after a refresh."
 }
