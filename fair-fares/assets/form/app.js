@@ -372,7 +372,7 @@ function setupPrefs() {
   $("#p-cabin").addEventListener("change", (e) => { P.cabin = e.target.value; autosave(); }); $("#p-stops").addEventListener("change", (e) => { P.max_stops = +e.target.value; autosave(); });
   $$("[data-flex]").forEach((b) => b.addEventListener("click", () => { P.fare_flex = b.dataset.flex; renderPrefs(); autosave(); }));
   $$("[data-buf]").forEach((b) => b.addEventListener("click", () => { P.buffer.style = b.dataset.buf; renderPrefs(); autosave(); }));
-  bind("#buf-min", (v) => (P.buffer.custom_minutes = +v));
+  bind("#buf-min", (v) => { P.buffer.custom_minutes = +v; renderPrefs(); });
   $("#cur-list").innerHTML = Object.entries(D.currencies).sort().map(([k, v]) => `<option value="${k}">${esc(v[0])}</option>`).join("");
   $("#p-cur").addEventListener("input", (e) => { const v = e.target.value.toUpperCase().slice(0, 3); P.currency = v; P.currency_auto = false; updateCurrency(); autosave(); });
   bind("#p-ins", (v) => (P.insurance = v)); $("#p-ins").addEventListener("change", (e) => { P.insurance = e.target.value; autosave(); });
@@ -391,6 +391,13 @@ function renderPrefs() {
   $$("[data-flex]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.flex === P.fare_flex));
   $$("[data-buf]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.buf === P.buffer.style));
   $("#buf-custom").hidden = P.buffer.style !== "custom";
+  const BUF = {
+    relaxed: "Tighter connections for a cheaper or quicker trip: about three quarters of the usual margin. For example, reaching the airport about 2¼ hours before a long-haul flight. More risk of a missed connection.",
+    standard: "The usual safety margin: the minimum time for the connection plus how late that train, bus or airline typically runs. For example, reaching the airport about 3 hours before a long-haul flight.",
+    extra: "Half as much margin again, for important trips or unreliable connections. For example, reaching the airport about 4½ hours before a long-haul flight. Overnight stays near the airport are suggested more often.",
+    custom: `Exactly ${P.buffer.custom_minutes || "the"} minutes on top of the minimum time for each connection, whatever the usual delays are.`,
+  };
+  $("#buf-hint").textContent = BUF[P.buffer.style] || "";
 }
 
 /* ---------- fill every input from S ---------- */

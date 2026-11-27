@@ -159,7 +159,7 @@
           <button type="button" data-buf="relaxed" aria-pressed="false">Relaxed</button><button type="button" data-buf="standard" aria-pressed="true">Standard</button>
           <button type="button" data-buf="extra" aria-pressed="false">Extra Safe</button><button type="button" data-buf="custom" aria-pressed="false">Custom</button></div>
         <div class="inline" id="buf-custom" hidden><input id="buf-min" type="number" min="15" step="15" style="max-width:120px" aria-label="Custom buffer minutes"> minutes on top of the minimum connection time</div>
-        <span class="hint">Buffers add the published delay record of each train, bus or airline to a base minimum.</span></div>
+        <span class="hint" id="buf-hint" aria-live="polite"></span></div>
       <div class="field"><label for="p-cur">Currency</label><input id="p-cur" type="text" list="cur-list" autocomplete="off" placeholder="EUR"><datalist id="cur-list"></datalist>
         <span class="hint" id="cur-hint">Set from your home city's country.</span></div>
       <div class="field"><label for="p-ins">Travel insurance estimate</label><select id="p-ins"><option value="no">No</option><option value="yes">Yes</option></select></div>
