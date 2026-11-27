@@ -8,7 +8,7 @@ status: ok | missing | stale | agent_check (the agent must look at its own tool 
 Results are cached in ~/.fair-fares/setup_cache.json and reused while nothing relevant changed.
 Installs nothing. The agent shows install commands to the user and runs them only after approval.
 """
-import json, os, platform, shutil, subprocess, sys, time, hashlib, pathlib, datetime, glob
+import json, os, platform, shutil, subprocess, sys, sysconfig, time, hashlib, pathlib, datetime, glob
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from common import STATE, DATA, read_json, write_json, config, save_config
 
@@ -129,6 +129,28 @@ PLAIN = {  # what to tell the user, in everyday words (commands stay in "install
 }
 
 
+def windows_alias():
+    """Names (python3/python) that resolve to a Windows App Execution Alias (in a WindowsApps folder).
+    Such aliases can run Python with a virtualised %APPDATA%, so packages pip put in the user site
+    (pip install --user) are invisible. Always run the skill's scripts with sys.executable instead."""
+    if platform.system() != "Windows":
+        return []
+    return [b for b in ("python3", "python") if "windowsapps" in (shutil.which(b) or "").lower()]
+
+
+def pip_install_cmd():
+    """pip command for Playwright. On Windows, skip --user when the interpreter's own site-packages is
+    writable (per-user python.org install): that folder is visible under every launcher, the user site is not."""
+    cmd = f'"{sys.executable}" -m pip install'
+    purelib = sysconfig.get_paths().get("purelib", "")
+    if not (platform.system() == "Windows" and purelib and os.access(purelib, os.W_OK)):
+        cmd += " --user"
+    cmd += " playwright"
+    if platform.system() == "Linux":
+        cmd += "  # add --break-system-packages if pip refuses (PEP 668)"
+    return cmd
+
+
 def item(i, label, required, status, detail="", install=None, fallback=None):
     return {"id": i, "label": label, "plain": PLAIN.get(i, label), "required": required, "status": status,
             "detail": detail, "install": install or {}, "fallback": fallback}
@@ -139,23 +161,28 @@ def check(agent, test_model=False):
     py = sys.version.split()[0]
     node = shutil.which("node")
     nv = sh(["node", "--version"])[1] if node else ""
-    items.append(item("runtime", "Python or Node", True, "ok", f"Python {py}" + (f", Node {nv}" if node else "")))
+    alias = windows_alias()
+    rt = f"Python {py} at {sys.executable}" + (f", Node {nv}" if node else "")
+    if alias:
+        rt += (f". `{'`/`'.join(alias)}` on PATH is a Windows Store alias that can hide user-installed packages:"
+               f" run every skill script with \"{sys.executable}\".")
+    items.append(item("runtime", "Python or Node", True, "ok", rt))
     # Playwright library + browser
     import importlib.util
     py_pw = importlib.util.find_spec("playwright") is not None
     node_pw = bool(node) and sh(["node", "-e", "require.resolve('playwright')"], 5)[0] == 0
-    pip = f"{sys.executable} -m pip install --user playwright"
-    if platform.system() == "Linux":
-        pip += "  # add --break-system-packages if pip refuses (PEP 668)"
+    pip = pip_install_cmd()
     if py_pw or node_pw:
         items.append(item("playwright", "Playwright library", True, "ok", "python" if py_pw else "node"))
     else:
-        items.append(item("playwright", "Playwright library", True, "missing", "Not importable from Python or Node.",
+        items.append(item("playwright", "Playwright library", True, "missing",
+                          f"Not importable from {sys.executable} or Node."
+                          + (" If you already installed it, re-run this check with that full path, not the python3 alias." if alias else ""),
                           {"commands": [pip] if not node else [pip, "# or Node: npm install -g playwright"]}))
     br = pw_browser_dirs()
     items.append(item("playwright_browser", "Playwright Chromium", True, "ok" if br else "missing",
                       br[0] if br else "No Playwright browser download found.",
-                      {"commands": [f"{sys.executable} -m playwright install chromium" if py_pw or not node else "npx playwright install chromium"]}))
+                      {"commands": [f'"{sys.executable}" -m playwright install chromium' if py_pw or not node else "npx playwright install chromium"]}))
     text = mcp_text()
     # Playwright MCP
     has_pw_mcp = "@playwright/mcp" in text or '"playwright"' in text or "[mcp_servers.playwright]" in text
@@ -179,7 +206,7 @@ def check(agent, test_model=False):
     # Kiwi.com
     kiwi = "mcp.kiwi.com" in text or "kiwi-com" in text
     items.append(item("kiwi", "Kiwi.com connector/MCP", False, "ok" if kiwi else "agent_check",
-                      "Configured" if kiwi else "Not in MCP config files; check your tool list for a Kiwi search-flight tool (it may be an account connector).",
+                      "Configured in an MCP config file. If no Kiwi search-flight tool is in your tool list yet, the agent needs a restart to load it; use the fallback until then." if kiwi else "Not in MCP config files; check your tool list for a Kiwi search-flight tool (it may be an account connector).",
                       {"commands": [KIWI_ADD.get(agent, KIWI_ADD["claude-code"])], "manual": ["Connector URL: https://mcp.kiwi.com (no API key)"]},
                       "Google Flights via a low-volume Playwright script (stops at any block)."))
     # Small model for the document check
@@ -212,13 +239,21 @@ def check(agent, test_model=False):
         cfg["doc_model"] = {"mode": "chat"}
     # Visa dataset freshness
     meta = read_json(DATA / "meta.json", {}) or {}
-    vd = (meta.get("datasets", {}).get("visa") or {}).get("date")
-    age = (datetime.date.today() - datetime.date.fromisoformat(vd)).days if vd else None
+    visa = meta.get("datasets", {}).get("visa") or {}
+    vd, dl = visa.get("date"), visa.get("downloaded")
+    today = datetime.date.today()
+    age = (today - datetime.date.fromisoformat(vd)).days if vd else None
+    dl_age = (today - datetime.date.fromisoformat(dl)).days if dl else None
+    # The upstream mirrors are not updated monthly. A dataset downloaded in the last 31 days is the newest
+    # available, even when its own date is older, so it is not stale.
+    fresh = (age is not None and age <= 31) or (dl_age is not None and dl_age <= 31)
+    detail = f"Dataset date {vd} ({age} days old)" if vd else "No visa dataset"
+    if vd and dl and age is not None and age > 31 and fresh:
+        detail += f"; downloaded {dl}, which was the newest upstream version"
     sd = str(pathlib.Path(__file__).parent / "update_data.py")
     items.append(item("visa_data", "Visa dataset freshness", False,
-                      "ok" if age is not None and age <= 31 else "stale",
-                      f"Dataset date {vd} ({age} days old)" if vd else "No visa dataset",
-                      {"commands": [f"{sys.executable} {sd} --check", f"{sys.executable} {sd} --visa"]},
+                      "ok" if fresh else "stale", detail,
+                      {"commands": [f'"{sys.executable}" "{sd}" --check', f'"{sys.executable}" "{sd}" --visa']},
                       "Use the current dataset; the search re-verifies on official government sites anyway."))
     cfg["agent"] = agent
     cfg.setdefault("models", models)
@@ -261,7 +296,7 @@ def main():
         return 0
     items = check(agent, "--test-model" in a)
     out = {"agent": agent, "detected": detect_agent(), "fingerprint": fp, "at": time.time(), "cached": False,
-           "os": platform.system(), "items": items}
+           "os": platform.system(), "python": sys.executable, "items": items}
     write_json(STATE / "setup_cache.json", out)
     print(json.dumps(out, indent=1))
     return 0

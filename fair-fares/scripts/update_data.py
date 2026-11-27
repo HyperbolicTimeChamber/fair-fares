@@ -8,7 +8,7 @@ Usage:
 
 Python standard library only. Writes assets/data/meta.json with source, licence and date.
 """
-import csv, io, json, math, sys, urllib.request, zipfile, datetime, os
+import csv, io, json, math, re, sys, urllib.request, zipfile, datetime, os
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(HERE, "..", "assets", "data")
@@ -24,10 +24,25 @@ VISA_SOURCES = [
 ]
 
 
-def get(url, binary=False):
-    req = urllib.request.Request(url, headers=UA)
+def _fetch(url, headers):
+    req = urllib.request.Request(url, headers=headers)
     with urllib.request.urlopen(req, timeout=60) as r:
-        b = r.read()
+        return r.read()
+
+
+def get(url, binary=False):
+    try:
+        b = _fetch(url, UA)
+    except Exception:
+        # Some networks reset raw.githubusercontent.com while api.github.com works:
+        # retry the same file through the GitHub contents API (raw media type, files up to 100 MB).
+        m = re.match(r"https://raw\.githubusercontent\.com/([^/]+/[^/]+)/([^/]+)/(.+)$", url)
+        if not m:
+            raise
+        repo, ref, path = m.groups()
+        print(f"raw.githubusercontent.com failed; retrying via api.github.com for {repo}/{path}", file=sys.stderr)
+        b = _fetch(f"https://api.github.com/repos/{repo}/contents/{path}?ref={ref}",
+                   {**UA, "Accept": "application/vnd.github.raw"})
     return b if binary else b.decode("utf-8")
 
 

@@ -43,12 +43,14 @@ Collect every approval the run can need in **one** exchange, then don't ask agai
 
 1. Identify yourself as one of: `claude-code`, `codex-app`, `codex-cli`, `grok`, `gemini`, `cursor`. Then run
    `python3 SKILL_DIR/scripts/setup_check.py --agent <you>` (add `--refresh` to bypass the cache).
+   Its output has a `python` field: use that exact interpreter path for every later script and pip command. On Windows, `python3`/`python` can be a Store alias that hides `pip install --user` packages, and `python` and `python3` can be different versions.
 2. For items with `status: agent_check`, look at **your own tool list**: the browser plugin (see `references/setup-and-portability.md`) and a Kiwi.com tool (`search-flight` from `mcp.kiwi.com`). If Kiwi is connected, just use it.
 3. Show a short status list (✓ ok / ✗ missing / ⚠ out of date / – not needed here), using each item's `plain` description. For every missing item, offer exactly:
    1. **Install it for me**: run the `install.commands` yourself after the user approves (show them only if asked). For clicks (browser extensions, marketplace installs, connectors), give simple steps and the link from `install.manual`, then wait.
    2. **I'll install it myself**: give simple steps (commands only if the user wants them), then re-run the check with `--refresh`.
    3. **Skip** (optional items only): say what changes (`fallback` field), then use the fallback.
-   Required: Python or Node, Playwright and its Chromium. Visa data older than 31 days → offer `update_data.py --visa`.
+   MCP servers added during this session (Kiwi, Playwright MCP) only show up in your tool list after the agent restarts. Say so, and use the fallback for this run unless the user restarts first.
+   Required: Python or Node, Playwright and its Chromium. `visa_data` stale (dataset older than 31 days and not downloaded in the last 31 days) → offer `update_data.py --visa`.
 4. If the user agrees (ask in step 0), run once with `--test-model` to confirm the small model works for the document check.
 Details and per-agent notes: `references/setup-and-portability.md`.
 
