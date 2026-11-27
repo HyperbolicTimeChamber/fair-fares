@@ -23,13 +23,13 @@ Find the cheapest door-to-door trip and take the user to the booking page. Never
 
 ## Workflow
 
-### Before anything: quick update check
+### Before anything: quick update check (asks first)
 
-Run `python3 SKILL_DIR/scripts/update_check.py --apply`. It takes a few seconds at most, skips itself if it checked in the last 6 hours, and never stops the run (offline is fine).
-- `updated`: tell the user in one line ("fair-fares was updated to 1.2.0: <notes>"), then **read this SKILL.md again** before going on, because the instructions may have changed.
-- `updated_next_session`: Claude Code plugin install; say the new version arrives next session and carry on with this one.
-- `update_available` or `failed`: mention it in one line with the `message`, carry on.
-- Anything else: say nothing.
+Run `python3 SKILL_DIR/scripts/update_check.py`. It only checks (a few seconds at most, at most once every 6 hours) and never changes anything or stops the run.
+- `update_available`: ask the user in plain words, as the first question of the run, e.g. "A newer fair-fares (1.3.0) is available: <notes>. Update now? <how>". Then:
+  - **yes**: run `update_check.py --apply`. If it says `updated`, **read this SKILL.md again** before going on, because the instructions may have changed. If `updated_next_session`, say it arrives next session and carry on with this one. If `failed` or `update_available` (local edits), say so in one line and carry on.
+  - **no**: run `update_check.py --decline` and carry on; that version won't be offered again.
+- Anything else (`up_to_date`, `skipped_recent`, `declined`, `offline`): say nothing.
 
 ### 0. One approval round (start of every run)
 

@@ -1,4 +1,4 @@
 {
- "version": "1.2.0",
- "notes": "One-way trips; booking buttons show how many tabs open; automatic update check at the start of each run."
+ "version": "1.2.1",
+ "notes": "The start-of-run update check now asks before updating."
 }
