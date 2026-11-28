@@ -121,6 +121,8 @@ const server = http.createServer(async (req, res) => {
   if (p === "/api/start") { b.saved_at = now(); wj(path.join(STATE, "settings.json"), b); return send(req, res, 200, { ok: true, event: emit("start", { settings_file: path.join(STATE, "settings.json") }).id }); }
   if (p === "/api/doccheck") { delete b._force; return send(req, res, 200, docCheck(b)); }
   if (p === "/api/book") return send(req, res, 200, { ok: true, event: emit("book", { option_id: String(b.option_id).slice(0, 60) }).id });
+  // Node fallback has no merge script runner: queue it for the agent, which re-merges on a "rerank" event.
+  if (p === "/api/rerank") { b.saved_at = now(); wj(path.join(STATE, "settings.json"), b); return send(req, res, 200, { ok: true, queued: true, event: emit("rerank", { settings_file: path.join(STATE, "settings.json") }).id }); }
   send(req, res, 404, { error: "not found" });
 });
 const args = process.argv.slice(2), arg = (k, d) => (args.includes(k) ? args[args.indexOf(k) + 1] : d);

@@ -80,6 +80,88 @@ def key(r):
                   "return_to_airport", "depart_datetime", "return_datetime", "ticket_type", "hotel_name"])
 
 
+def limit_reasons(r, prefs):
+    """Which of the user's limits (form → Flights) this row breaks, computed from the row's own data.
+
+    Re-evaluated on every merge, so changing a setting and re-merging re-ranks without a new search.
+    """
+    out, avoid = [], prefs.get("avoid", {}) or {}
+    ms = prefs.get("max_stops")
+    st = num(r["stops"])
+    if ms is not None and ms != "" and int(ms) < 3 and st is not None and st > int(ms):
+        out.append(f"{int(st)} stops (max {int(ms)})")
+    if avoid.get("early_departures"):
+        for c, lab in (("depart_datetime", "leaves home"), ("return_datetime", "leaves for home")):
+            m = re.search(r"\d{4}-\d\d-\d\d[ T](\d\d):(\d\d)", r[c])
+            if m and int(m.group(1)) < 6:
+                out.append(f"early departure: {lab} at {m.group(1)}:{m.group(2)}")
+    if avoid.get("overnight_layovers"):
+        legacy = r["notes"].lower().split("outside limits:", 1)[1] if "outside limits:" in r["notes"].lower() else ""
+        if re.search(r"overnight", r["layover_details"].lower() + " " + legacy):
+            out.append("overnight layover")
+    if avoid.get("self_transfer") and r["ticket_type"] in SEPARATE:
+        out.append("self-transfer (separate tickets)")
+    bags = num(prefs.get("bags")) or 0
+    txt = (r["notes"] + " " + r["baggage_included"]).lower()
+    if bags > 0 and not r["bag_fees"] and re.search(r"no (checked |check-in )?bag|without (a )?(checked )?bag|bag not included|no checked", txt):
+        out.append("no checked bag")
+    hrs = num(prefs.get("max_hours_each_way"))
+    if hrs:
+        for c in ("total_travel_time_out", "total_travel_time_back"):
+            h = hours(r[c])
+            if h and h > hrs:
+                out.append(f"door-to-door {h:.0f} h (max {hrs:.0f})")
+                break
+    return out
+
+
+REQUIRED_B = ["Skyscanner", "Kayak", "Momondo", "eDreams/Opodo", "Trip.com", "Booking.com Flights"]
+DONE = {"done", "blocked", "no_results", "not_applicable"}
+
+
+def coverage_gaps(run, s):
+    """List required sources with no final status in RUN/coverage.json.
+
+    coverage.json: {"sources": [{"agent": "B", "site": "Kayak", "status": "done|blocked|no_results|not_applicable|skipped", "note": "..."}],
+                    "local_sites": ["MakeMyTrip", ...], "airlines": ["Qatar Airways", ...]}
+    local_sites (from research) and airlines (every carrier serving the route) must each get their own entry.
+    'skipped' never counts as covered.
+    """
+    cov = read_json(run / "coverage.json", None)
+    if not cov:
+        return ["coverage.json missing: log every source searched (see references/search-workflow.md)"]
+    seen = {}
+    for e in cov.get("sources", []):
+        seen[(e.get("agent", "").upper(), (e.get("site") or "").lower())] = (e.get("status") or "").lower()
+    have = lambda ag, site: seen.get((ag, site.lower())) in DONE
+    agent_done = lambda ag: any(k[0] == ag and v in DONE for k, v in seen.items())
+    trip, prefs = s.get("trip", {}), s.get("prefs", {})
+    gaps = []
+    if not agent_done("A"):
+        gaps.append("A broad scan")
+    for site in REQUIRED_B + list(cov.get("local_sites", [])):
+        if not have("B", site):
+            gaps.append(f"B {site}")
+    if not cov.get("local_sites"):
+        gaps.append("B local booking sites not listed (research step)")
+    for al in cov.get("airlines", []):
+        if not have("C", al):
+            gaps.append(f"C {al} direct")
+    if not cov.get("airlines"):
+        gaps.append("C airlines not listed")
+    if trip.get("alternatives", {}).get("enabled") and not agent_done("D"):
+        gaps.append("D alternative airports + ground")
+    if not agent_done("E"):
+        gaps.append("E hub routing")
+    if prefs.get("hotels", {}).get("enabled") and not agent_done("F"):
+        gaps.append("F hotels")
+    if not agent_done("G"):
+        gaps.append("G transfers")
+    if not agent_done("V"):
+        gaps.append("V verification of top 10")
+    return gaps
+
+
 def main():
     a = sys.argv[1:]
     run = pathlib.Path(a[a.index("--run") + 1]) if "--run" in a else current_run()
@@ -91,7 +173,7 @@ def main():
     closest = (trip.get("closest_airport") or {}).get("code", "").upper()
     min_saving = num(trip.get("alternatives", {}).get("min_saving")) or 0
     currency = prefs.get("currency") or ""
-    rows, warnings, sources = [], [], {}
+    rows, warnings, sources, outside = [], [], {}, []
     for f in sorted(glob.glob(str(run / "results" / "*.csv"))):
         if os.path.basename(f) == "SCHEMA.csv":
             continue
@@ -114,6 +196,10 @@ def main():
                     tot = sum(p for p in parts if p)
                     r["total_cost_all_travellers"] = f"{tot:.2f}"
                 r["_total"] = tot
+                r["_limits"] = limit_reasons(r, prefs)
+                if r["_limits"]:
+                    outside.append(r)  # breaks a current setting: shown separately with the reasons, never ranked
+                    continue
                 if not r["nights"]:
                     try:
                         r["nights"] = str((datetime.date.fromisoformat(r["return_datetime"][:10]) - datetime.date.fromisoformat(r["depart_datetime"][:10])).days)
@@ -143,6 +229,17 @@ def main():
             keep["total_cost_all_travellers"] = f"{keep['_total']:.2f}"
         keep["notes"] = (keep["notes"] + f" | also on {other['site_or_operator']}: fare {fare(other):.0f}").strip(" |")
         best[k] = keep
+    # Optional: leave airport taxis / local transport out of totals (form → Connections & money).
+    # Removes destination_transfer_cost, and ground_cost only for trips from/to the closest airport
+    # (local transport). Ground legs to another airport (train to a hub city) stay: they are part of the route.
+    excl_local = bool(prefs.get("exclude_airport_transfers"))
+    if excl_local:
+        for r in list(best.values()) + outside:
+            local = r["depart_airport"].upper() == closest and (r["return_to_airport"] or closest).upper() == closest
+            cut = (num(r["destination_transfer_cost"]) or 0) + ((num(r["ground_cost"]) or 0) if local else 0)
+            if cut:
+                r["_total"] -= cut
+                r["total_cost_all_travellers"] = f"{r['_total']:.2f}"
     rows = sorted(best.values(), key=lambda r: r["_total"])
     # Direct baseline: simple round trip from/to the closest airport, no ground legs or positioning flight.
     def is_direct(r):
@@ -178,6 +275,11 @@ def main():
            "top": [clean(r) for r in main_rows[:10]], "more": [clean(r) for r in main_rows[10:40]],
            "smaller_savings": [clean(r) for r in small[:30]],
            "miles": [clean(r) for r in rows if r["miles_option"]][:10],
+           "outside_limits": [{c: r[c] for c in COLS} | {"total": r["_total"], "limit_reasons": r["_limits"], "parts": booking_parts(r)}
+                              for r in sorted(outside, key=lambda r: r["_total"])[:30]],
+           "airport_transfers_excluded": excl_local,
+           "limits_applied": {"max_stops": prefs.get("max_stops"), "avoid": prefs.get("avoid", {}), "bags": prefs.get("bags"),
+                              "max_hours_each_way": prefs.get("max_hours_each_way")},
            "counts": {"options": len(rows), "files": sources}, "warnings": warnings,
            "report": read_json(run / "report.json", {}) or {}}
     # What changed since the previous run.
@@ -194,8 +296,14 @@ def main():
                            "was": old.get(k), "now": o["total"],
                            "change": None if k not in old else round(o["total"] - old[k], 2)})
             out["changes"] = {"previous_run": prev["path"], "items": ch}
+    # Coverage: every required source must be logged as done, blocked or no_results. Gaps make the run incomplete.
+    gaps = coverage_gaps(run, s)
+    out["coverage_gaps"] = gaps
+    if gaps:
+        warnings.append(f"INCOMPLETE: {len(gaps)} required source(s) not searched: " + "; ".join(gaps[:8]))
     write_json(run / "results.json", out)
     print(json.dumps({"options": len(rows), "main": len(main_rows), "smaller_savings": len(small),
+                      "complete": not gaps, "coverage_gaps": gaps,
                       "direct_total": direct["_total"] if direct else None,
                       "cheapest": main_rows[0]["route_summary"] if main_rows else None, "warnings": warnings[:10]}, indent=1))
     return 0

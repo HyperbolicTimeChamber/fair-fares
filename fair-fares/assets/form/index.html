@@ -148,9 +148,10 @@
       <div class="field"><label for="p-bags">Checked bags per person</label><input id="p-bags" type="number" min="0" max="4" value="1" inputmode="numeric"></div>
       <div class="field"><label for="p-stops">Max stops each way</label><select id="p-stops"><option value="0">Direct only</option><option value="1">1</option><option value="2" selected>2</option><option value="3">3+</option></select></div>
       <div class="field"><label for="p-hours">Max door-to-door time each way</label><div class="suffix"><input id="p-hours" type="number" min="1" max="96" placeholder="No limit" inputmode="numeric"><span>hours</span></div></div>
-      <div class="field span2"><span class="label">Things to avoid</span>
+      <div class="field span-all"><span class="label">Things to avoid</span>
         <div class="inline"><label class="check"><input type="checkbox" id="p-avoid-overnight"> Overnight layovers</label>
-        <label class="check"><input type="checkbox" id="p-avoid-early"> Very early departures (before 06:00)</label></div></div>
+        <label class="check"><input type="checkbox" id="p-avoid-early"> Very early departures (before 06:00)</label>
+        <label class="check"><input type="checkbox" id="p-avoid-self"> Self-transfers (separate tickets: you collect and re-check bags yourself, and a missed connection isn't covered)</label></div></div>
       <div class="field span2"><span class="label" id="ff-l">Fare flexibility</span>
         <div class="seg" role="group" aria-labelledby="ff-l"><button type="button" data-flex="cheapest" aria-pressed="true">Cheapest Only</button><button type="button" data-flex="changeable" aria-pressed="false">Show Changeable Fares Too</button></div></div>
     </div>
@@ -166,6 +167,8 @@
         <span class="hint" id="buf-hint" aria-live="polite"></span></div>
       <div class="field"><label for="p-cur">Currency</label><input id="p-cur" type="text" list="cur-list" autocomplete="off" placeholder="EUR"><datalist id="cur-list"></datalist>
         <span class="hint" id="cur-hint">Set from your home city's country.</span></div>
+      <div class="field span2"><label class="check"><input type="checkbox" id="p-no-transfers"> Leave airport taxis and local transport out of the totals</label>
+        <span class="hint">For when you're getting a lift or already have transport. Trains or buses to another airport (e.g. Berlin to Prague) still count, because they're part of the route.</span></div>
       <div class="field"><label for="p-ins">Travel insurance estimate</label><select id="p-ins"><option value="no">No</option><option value="yes">Yes</option></select></div>
       <div class="field"><label for="p-miles">Miles / points programmes</label><input id="p-miles" type="text" placeholder="e.g. Miles & More, Flying Blue"></div>
       <div class="field"><label for="p-rail">Railcards / discounts</label><input id="p-rail" type="text" placeholder="e.g. BahnCard 25, Interrail"></div>
@@ -215,6 +218,13 @@
 <div class="page" id="page-results" hidden>
   <h1>Results</h1>
   <div id="r-progress" class="card progress" aria-live="polite"></div>
+  <section class="card" id="r-again"><h2>Changed your settings?</h2>
+    <p class="hint">Change stops, bags, things to avoid or self-transfers on page 3, then re-rank: the options already found are re-sorted at once. Changed places, dates or travellers need a new search.</p>
+    <div class="inline">
+      <button type="button" class="btn primary" id="r-rerank">Re-rank with my settings</button>
+      <button type="button" class="btn" id="r-search">Search again</button>
+    </div>
+  </section>
   <div id="r-body"></div>
 </div>
 <nav class="pagenav bottom" aria-label="Page navigation">
