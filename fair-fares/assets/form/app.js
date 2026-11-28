@@ -252,7 +252,11 @@ function renderTravellers() {
   const t = S.travellers;
   $("#adults").textContent = t.adults; $("#children").textContent = t.children;
   $$("[data-pp]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.pp === t.passport_mode));
-  const blocks = t.passport_mode === "same" ? [{ key: "*", title: "Everyone", person: null }] : t.list.map((x) => ({ key: x.id, title: tName(x), person: x }));
+  // One traveller: "Same for Everyone" vs "Per Traveller" means nothing, so hide the switch.
+  const solo = t.list.length === 1;
+  $("#pp-mode").hidden = solo;
+  $("#pp-list").style.marginTop = solo ? "0" : "14px";
+  const blocks = t.passport_mode === "same" ? [{ key: "*", title: solo ? tName(t.list[0]) : "Everyone", person: null }] : t.list.map((x) => ({ key: x.id, title: tName(x), person: x }));
   $("#pp-list").innerHTML = blocks.map((b) => {
     const pps = t.passports[b.key] || (t.passports[b.key] = [{ country: "", expiry: "" }]);
     const person = b.person ? `<div class="grid two"><div class="field"><label for="nm-${b.key}">Name (optional)</label><input id="nm-${b.key}" type="text" data-name="${b.key}" value="${esc(b.person.name)}"></div>
@@ -293,12 +297,14 @@ async function loadDestDocs() {
 function docRows(kind, docs) {
   const people = S.travellers.list;
   if (!docs.length) return `<tr><td class="muted">${kind === "other" ? "None added." : "No specific documents found."}</td></tr>`;
-  return `<thead><tr><th scope="col">Document</th><th scope="col">Everyone</th>${people.map((p) => `<th scope="col">${esc(tName(p))}</th>`).join("")}${kind === "other" ? "<th></th>" : ""}</tr></thead><tbody>` +
+  // One traveller: an "Everyone" column would duplicate that person's column, so leave it out.
+  const solo = people.length === 1;
+  return `<thead><tr><th scope="col">Document</th>${solo ? "" : `<th scope="col">Everyone</th>`}${people.map((p) => `<th scope="col">${esc(tName(p))}</th>`).join("")}${kind === "other" ? "<th></th>" : ""}</tr></thead><tbody>` +
     docs.map((d) => {
       const held = (S.documents.find((x) => x.id === d.id) || {}).applies_to || [];
       const all = people.length && people.every((p) => held.includes(p.id));
       const some = !all && people.some((p) => held.includes(p.id));
-      return `<tr><th scope="row" style="font-weight:500">${esc(d.label)}</th><td><label class="cell"><input type="checkbox" data-all="${esc(d.id)}" ${all ? "checked" : ""} ${some ? 'data-partial="1" aria-checked="mixed"' : ""} aria-label="${esc(d.label)}: everyone"></label></td>` +
+      return `<tr><th scope="row" style="font-weight:500">${esc(d.label)}</th>${solo ? "" : `<td><label class="cell"><input type="checkbox" data-all="${esc(d.id)}" ${all ? "checked" : ""} ${some ? 'data-partial="1" aria-checked="mixed"' : ""} aria-label="${esc(d.label)}: everyone"></label></td>`}` +
         people.map((p) => `<td><label class="cell"><input type="checkbox" data-doc="${esc(d.id)}" data-who="${p.id}" ${held.includes(p.id) ? "checked" : ""} aria-label="${esc(d.label)}: ${esc(tName(p))}"></label></td>`).join("") +
         (kind === "other" ? `<td><button type="button" class="btn small" data-docrm="${esc(d.id)}" aria-label="Remove ${esc(d.label)}">×</button></td>` : "") + "</tr>";
     }).join("") + "</tbody>";
