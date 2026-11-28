@@ -229,6 +229,17 @@ def main():
             keep["total_cost_all_travellers"] = f"{keep['_total']:.2f}"
         keep["notes"] = (keep["notes"] + f" | also on {other['site_or_operator']}: fare {fare(other):.0f}").strip(" |")
         best[k] = keep
+    # Optional: leave airport taxis / local transport out of totals (form → Connections & money).
+    # Removes destination_transfer_cost, and ground_cost only for trips from/to the closest airport
+    # (local transport). Ground legs to another airport (train to a hub city) stay: they are part of the route.
+    excl_local = bool(prefs.get("exclude_airport_transfers"))
+    if excl_local:
+        for r in list(best.values()) + outside:
+            local = r["depart_airport"].upper() == closest and (r["return_to_airport"] or closest).upper() == closest
+            cut = (num(r["destination_transfer_cost"]) or 0) + ((num(r["ground_cost"]) or 0) if local else 0)
+            if cut:
+                r["_total"] -= cut
+                r["total_cost_all_travellers"] = f"{r['_total']:.2f}"
     rows = sorted(best.values(), key=lambda r: r["_total"])
     # Direct baseline: simple round trip from/to the closest airport, no ground legs or positioning flight.
     def is_direct(r):
@@ -266,6 +277,7 @@ def main():
            "miles": [clean(r) for r in rows if r["miles_option"]][:10],
            "outside_limits": [{c: r[c] for c in COLS} | {"total": r["_total"], "limit_reasons": r["_limits"], "parts": booking_parts(r)}
                               for r in sorted(outside, key=lambda r: r["_total"])[:30]],
+           "airport_transfers_excluded": excl_local,
            "limits_applied": {"max_stops": prefs.get("max_stops"), "avoid": prefs.get("avoid", {}), "bags": prefs.get("bags"),
                               "max_hours_each_way": prefs.get("max_hours_each_way")},
            "counts": {"options": len(rows), "files": sources}, "warnings": warnings,

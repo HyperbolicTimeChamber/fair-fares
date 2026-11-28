@@ -40,6 +40,7 @@ Server API (POSTs need header `X-Fair-Fares: 1`): `GET /api/settings`, `POST /ap
     "fare_flex": "cheapest|changeable",
     "buffer": {"style": "relaxed|standard|extra|custom", "custom_minutes"},
     "currency", "miles", "railcards", "insurance": "yes|no",
+    "exclude_airport_transfers": bool,  // leave destination taxis and local home<->airport transport out of totals (merge applies it); ground legs to another airport still count. Still fill the cost columns.
     "hotels": {"enabled","budget","min_rating","must_haves"},
     "enter_details": bool    // may enter names/contact for top 3; unattended = approved for this run, else ask each time; never passport/payment
   },
