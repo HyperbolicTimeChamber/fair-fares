@@ -10,6 +10,22 @@
 - `total_cost_all_travellers` covers **all** travellers. Bag fees for the chosen number of bags each way.
 - Return to the lead only: best 5 (one line each), sites that worked, sites blocked. No page dumps.
 
+## Coverage log (mandatory, no skipping)
+Before phase 2, write `RUN/coverage.json` with the full source list:
+```json
+{"local_sites": ["MakeMyTrip", "Cleartrip", "Ixigo", "EaseMyTrip"],
+ "airlines": ["Qatar Airways", "IndiGo", "Air India", "Turkish Airlines", "Emirates", "Etihad Airways"],
+ "sources": [{"agent": "B", "site": "Kayak", "status": "done", "note": "8 rows"}]}
+```
+- `local_sites`: every booking site from research that is popular in the destination country. `airlines`: every carrier seen serving the route in phase 1 and in research.
+- Each subagent appends one entry per site it covers. Status: `done` (searched, rows saved), `no_results`, `blocked` (CAPTCHA, region block, sign-in wall: note says which), `not_applicable` (with reason). `skipped` is never acceptable.
+- Every required comparison site gets its own entry: Skyscanner, Kayak, Momondo, eDreams/Opodo, Trip.com, Booking.com Flights.
+- When a tool fails (e.g. the Google Flights scan times out), use the next tool in the order below for that same phase (Kiwi, then a comparison site's flexible-date or month view). Never drop the phase.
+- When a site is region-blocked, try that site's international or country version if it has one (e.g. a .com/.de variant run by the same company). Never use a VPN or proxy and never get around a block. Then log it as `blocked`.
+- Cross-check: the cheapest fares from each site go in its CSV even if they break a limit, with accurate `depart_datetime`/`return_datetime` (with times), `stops`, `layover_details` (write "overnight" for an overnight wait), `ticket_type` (`self_transfer` whenever any leg is a separate ticket) and bag facts (`baggage_included`, `bag_fees`, or "no checked bag" in notes). `merge_results.py` decides from these fields which rows break the user's current settings and lists them under "Outside your limits" with the reason. Then a lower price seen elsewhere can be explained (no bag, 3+ stops, 03:45 departure), and the user can re-rank after changing a setting without a new search.
+- Limits in briefs: copy the form's definitions exactly (`references/form-and-settings.md`): early departure = before 06:00.
+- `merge_results.py` reads this file and reports `coverage_gaps`. Results are not final until the list is empty.
+
 ## Turning the form's dates into flight dates
 
 `trip.window.basis` decides where travel days go:

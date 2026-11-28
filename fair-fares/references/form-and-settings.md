@@ -33,7 +33,10 @@ Server API (POSTs need header `X-Fair-Fares: 1`): `GET /api/settings`, `POST /ap
   "doccheck": {"result": {...}, "choices": {"<traveller>:<doc_id>": "add|arrange"}},  // "add" = include cost in totals
   "prefs": {
     "cabin", "bags" (checked bags per person), "max_stops" (each way; 3 = 3+), "max_hours_each_way" (door to door, "" = none),
-    "avoid": {"overnight_layovers", "early_departures"},  // early = before 06:00
+    "avoid": {"overnight_layovers", "early_departures", "self_transfer"},  // early = first flight of either direction before 06:00 local; self_transfer = ticket_type separate_one_ways/self_transfer
+    // Use these exact definitions in subagent briefs. Never invent stricter ones (e.g. "before 07:00").
+    // Subagents save every fare they find with its real times, stops, ticket_type and bag facts; merge_results.py decides
+    // what breaks a limit (limit_reasons) on every merge, so the results page's "Re-rank with my settings" works without a new search.
     "fare_flex": "cheapest|changeable",
     "buffer": {"style": "relaxed|standard|extra|custom", "custom_minutes"},
     "currency", "miles", "railcards", "insurance": "yes|no",

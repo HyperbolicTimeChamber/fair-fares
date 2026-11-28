@@ -38,6 +38,7 @@ h2 { font-size: 1.1rem; margin: 0 0 12px; }
 .lede { color: var(--muted); margin: 0 0 20px; }
 section.card, div.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; margin-bottom: 16px; box-shadow: var(--shadow); }
 .grid { display: grid; gap: 14px; grid-template-columns: 1fr; }
+.span-all { grid-column: 1 / -1; }
 @media (min-width: 720px) { .grid.two { grid-template-columns: 1fr 1fr; } .grid.three { grid-template-columns: 1fr 1fr 1fr; } .span2 { grid-column: span 2; } }
 .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; position: relative; }
 label, .label { font-weight: 600; font-size: .95rem; }

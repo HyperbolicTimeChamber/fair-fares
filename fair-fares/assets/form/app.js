@@ -16,7 +16,7 @@ const DEFAULTS = () => ({
   travellers: { adults: 1, children: 0, list: [], passport_mode: "same", passports: { "*": [{ country: "", expiry: "" }] } },
   documents: [],
   doccheck: { req_key: "", result: null, choices: {} },
-  prefs: { cabin: "economy", bags: 1, max_stops: 2, max_hours_each_way: "", avoid: { overnight_layovers: false, early_departures: false },
+  prefs: { cabin: "economy", bags: 1, max_stops: 2, max_hours_each_way: "", avoid: { overnight_layovers: false, early_departures: false, self_transfer: false },
     fare_flex: "cheapest", buffer: { style: "standard", custom_minutes: 120 }, currency: "", currency_auto: true,
     miles: "", railcards: "", insurance: "no", hotels: { enabled: false, budget: "", min_rating: "", must_haves: "" }, enter_details: false },
   unattended: { enabled: true, previous_run: "fresh", new_documents: "add", blocked_sites: "skip", handoff: "wait" },
@@ -395,6 +395,7 @@ function setupPrefs() {
   const P = S.prefs;
   bind("#p-cabin", (v) => (P.cabin = v)); bind("#p-bags", (v) => (P.bags = +v)); bind("#p-stops", (v) => (P.max_stops = +v)); bind("#p-hours", (v) => (P.max_hours_each_way = v === "" ? "" : +v));
   bind("#p-avoid-overnight", (v) => (P.avoid.overnight_layovers = v)); bind("#p-avoid-early", (v) => (P.avoid.early_departures = v));
+  bind("#p-avoid-self", (v) => (P.avoid.self_transfer = v));
   $("#p-cabin").addEventListener("change", (e) => { P.cabin = e.target.value; autosave(); }); $("#p-stops").addEventListener("change", (e) => { P.max_stops = +e.target.value; autosave(); });
   $$("[data-flex]").forEach((b) => b.addEventListener("click", () => { P.fare_flex = b.dataset.flex; renderPrefs(); autosave(); }));
   $$("[data-buf]").forEach((b) => b.addEventListener("click", () => { P.buffer.style = b.dataset.buf; renderPrefs(); autosave(); }));
@@ -434,7 +435,7 @@ function fillAll() {
   $("#stay").value = T.stay_area;
   $("#w-earliest").value = W.earliest; $("#w-latest").value = W.latest; $("#w-min").value = W.min_nights; $("#w-max").value = W.max_nights; $("#w-tillend").checked = !!W.till_end; $("#w-leave").value = W.leave; $("#w-return").value = W.return;
   $("#p-cabin").value = P.cabin; $("#p-bags").value = P.bags; $("#p-stops").value = P.max_stops; $("#p-hours").value = P.max_hours_each_way;
-  $("#p-avoid-overnight").checked = P.avoid.overnight_layovers; $("#p-avoid-early").checked = P.avoid.early_departures;
+  $("#p-avoid-overnight").checked = P.avoid.overnight_layovers; $("#p-avoid-early").checked = P.avoid.early_departures; $("#p-avoid-self").checked = !!P.avoid.self_transfer;
   $("#buf-min").value = P.buffer.custom_minutes; $("#p-cur").value = P.currency; $("#p-ins").value = P.insurance; $("#p-miles").value = P.miles; $("#p-rail").value = P.railcards;
   $("#h-enabled").checked = P.hotels.enabled; $("#h-box").hidden = !P.hotels.enabled; $("#h-budget").value = P.hotels.budget; $("#h-rating").value = P.hotels.min_rating; $("#h-must").value = P.hotels.must_haves;
   $("#p-details").checked = P.enter_details;
@@ -525,6 +526,8 @@ async function pollResults() {
     if (res.direct) h += `<p class="muted">Direct round trip from ${esc(res.closest_airport)}: ${n0(res.direct.total)} ${esc(cur)} (${esc(res.direct.route_summary)}).</p>`;
     h += `<section class="card"><h2>Top ${res.top.length} door-to-door options</h2>${table(res.top, cur)}</section>`;
     if (res.miles?.length) h += `<section class="card"><h2>Miles &amp; points options</h2>${table(res.miles, cur)}</section>`;
+    if (res.outside_limits?.length) h += `<details><summary>Outside your limits (${res.outside_limits.length}) — cheaper or similar fares that break a setting on page 3</summary>
+      <div class="scroll-x"><table class="results"><thead><tr><th>Route</th><th>Dates</th><th style="text-align:right">Total</th><th>Why it's left out</th></tr></thead><tbody>${res.outside_limits.map((o) => `<tr><td><strong>${esc(o.route_summary)}</strong><div class="muted">${esc(o.site_or_operator)}</div></td><td>${esc(o.depart_datetime)}<br>${esc(o.return_datetime)}</td><td class="num">${n0(o.total)} ${esc(cur)}</td><td>${esc((o.limit_reasons || []).join("; "))}</td></tr>`).join("")}</tbody></table></div></details>`;
     if (res.smaller_savings?.length) h += `<details><summary>Smaller savings (${res.smaller_savings.length}) — below your ${n0(res.min_saving)} ${esc(cur)} minimum</summary>${table(res.smaller_savings, cur)}</details>`;
     if (rep.decisions_needed && rep.decisions_needed.length) h += `<section class="card" style="border-color:var(--warn)"><h2>Needs your decision</h2>${block(rep.decisions_needed)}</section>`;
     if (rep.tools) h += `<section class="card"><h2>Tools &amp; sites</h2>${block(rep.tools)}</section>`;
@@ -574,7 +577,16 @@ function updateNav() {
 function setupNav() {
   $$("nav.steps button").forEach((b) => b.addEventListener("click", () => go(b.dataset.go)));
   $$(".js-back").forEach((b) => b.addEventListener("click", () => go(PAGES[Math.max(0, PAGES.indexOf(location.hash.slice(1)) - 1)])));
-  $$(".js-next").forEach((b) => b.addEventListener("click", () => { const cur = location.hash.slice(1) || "trip"; if (cur === "check") start(); else go(PAGES[PAGES.indexOf(cur) + 1]); }));
+  $("#r-rerank").addEventListener("click", async () => {
+  try {
+    const r = await api("/api/rerank", S);
+    if (r.queued) toast("Sent to the agent: it re-ranks the results with your settings.", 6000);
+    else toast(`Re-ranked with your settings: ${r.main} options fit.` + (r.trip_changed ? " Your trip details changed too: press Search again to search the new trip." : ""), 8000);
+    pollResults();
+  } catch (e) { toast("Couldn't re-rank: " + e.message); }
+});
+$("#r-search").addEventListener("click", () => start());
+$$(".js-next").forEach((b) => b.addEventListener("click", () => { const cur = location.hash.slice(1) || "trip"; if (cur === "check") start(); else go(PAGES[PAGES.indexOf(cur) + 1]); }));
   $("#save-file").addEventListener("click", () => {
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([JSON.stringify(S, null, 1)], { type: "application/json" }));

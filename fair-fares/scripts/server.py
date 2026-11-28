@@ -68,6 +68,38 @@ def dest_docs_with_model(country, children):
     return base
 
 
+def rerank(b):
+    """Apply the form's current Flights settings to the existing results, without a new search.
+
+    Copies prefs into the current run's settings.json and re-runs merge_results.py. Trip changes
+    (places, dates, travellers) need a new search instead: the response says so.
+    """
+    run = current_run()
+    if not run:
+        return 409, {"error": "No search has run yet. Press Start search."}
+    b["saved_at"] = datetime.datetime.now().isoformat(timespec="seconds")
+    write_json(STATE / "settings.json", b)
+    rs = read_json(run / "settings.json", {}) or {}
+    # The minimum-saving rule is a ranking setting: apply it, don't count it as a trip change.
+    strip = lambda t: {k: v for k, v in (t or {}).items() if k != "alternatives"} | \
+        {"alt_enabled": (t or {}).get("alternatives", {}).get("enabled")}
+    trip_changed = json.dumps(strip(rs.get("trip")), sort_keys=True) != json.dumps(strip(b.get("trip")), sort_keys=True) \
+        or json.dumps(rs.get("travellers", {}), sort_keys=True) != json.dumps(b.get("travellers", {}), sort_keys=True)
+    rs["prefs"] = b.get("prefs", rs.get("prefs", {}))
+    rs.setdefault("trip", {}).setdefault("alternatives", {})["min_saving"] = \
+        (b.get("trip", {}).get("alternatives", {}) or {}).get("min_saving", "")
+    write_json(run / "settings.json", rs)
+    merge = os.path.join(os.path.dirname(os.path.abspath(__file__)), "merge_results.py")
+    try:
+        out = subprocess.run([sys.executable, merge, "--run", str(run)], capture_output=True, text=True, timeout=120,
+                             stdin=subprocess.DEVNULL)
+        summary = json.loads(out.stdout or "{}")
+    except Exception as e:
+        return 500, {"error": f"re-ranking failed: {e.__class__.__name__}"}
+    emit("rerank", {"run": str(run)})
+    return 200, {"ok": True, "main": summary.get("main"), "trip_changed": trip_changed}
+
+
 class H(BaseHTTPRequestHandler):
     server_version = "fair-fares/1.0"
 
@@ -152,6 +184,8 @@ class H(BaseHTTPRequestHandler):
         if p == "/api/book":
             ev = emit("book", {"option_id": str(b.get("option_id"))[:60]})
             return self.send(200, {"ok": True, "event": ev["id"]})
+        if p == "/api/rerank":
+            return self.send(*rerank(b))
         return self.send(404, {"error": "not found"})
 
     def file(self, path, gz=False):

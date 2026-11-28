@@ -20,6 +20,7 @@ Find the cheapest door-to-door trip and take the user to the booking page. Never
 - Respect site terms. Visible browser, randomised pauses, modest request counts, one subagent per website. At a CAPTCHA or block: stop on that site, log it, move on. Never get around bot protection.
 - Ask before installing anything, all in one batch in step 0. Describe each install in plain words (the `plain` field from the setup check); show the exact commands only if the user asks.
 - Never fall back silently: when a tool is missing or blocked, say what changes and which fallback you use.
+- **Never skip a source.** Every phase (A, B, C, D if ticked, E, F if ticked, G) and every site on its list runs, including every local booking site found in research and every airline serving the route. Saving time is not a reason to skip. A failed tool means using its fallback, not dropping the phase. A source is finished only when it is logged in `RUN/coverage.json` as `done`, `blocked` (CAPTCHA, region block, sign-in wall: give the reason) or `no_results`. `skipped` never counts. Results are not ready while `merge_results.py` reports `"complete": false`: search the listed gaps first. Do not set `progress.json` `done: true` or present results as final until the gaps are empty. The only exception is a source that is truly blocked: list it in `report.json` → `tools.blocked` and `decisions_needed` so the user can check it themselves.
 
 ## Workflow
 
@@ -77,11 +78,11 @@ Details and per-agent notes: `references/setup-and-portability.md`.
 
 ### 5. Merge, verify, output (`references/merge-verify-output.md`)
 
-1. `python3 SKILL_DIR/scripts/merge_results.py` → `all_options.csv` + `results.json`. Fix any warnings it prints (e.g. currency conversions).
-2. Verify the top 10 one at a time (price status, transit documents with costs, disruptions, `checked_at`), update the CSV rows, merge again.
+1. `python3 SKILL_DIR/scripts/merge_results.py` → `all_options.csv` + `results.json`. Fix any warnings it prints (e.g. currency conversions). If it prints `"complete": false`, go back to step 4 and search every source in `coverage_gaps` before continuing.
+2. Verify the top 10 one at a time (price status, transit documents with costs, disruptions, `checked_at`), update the CSV rows, log `{"agent": "V", "site": "top10", "status": "done"}` in `coverage.json`, merge again.
 3. Write `RUN/report.json` (documents summary, season, top-3 reasons, tools, checkout check, alerts, holidays), merge once more, set `progress.json` `done: true`.
 4. Tell the user the results page is ready (`server.py --page results` re-opens it) and give the same summary in chat, starting with anything in `decisions_needed`. If `unattended.handoff` is `top1`, open the #1 pick at passenger details (step 6) without waiting.
 
 ### 6. Booking hand-off (`references/booking-step.md`)
 
-Keep listening: `wait_event.py --types book`. For each request, open the same site in your browser plugin, re-search the same dates, re-select the exact flights (fare type and bags too), and stop at the passenger-details page. Write `RUN/booking_status.json` `{"message": ...}` so the page shows progress (old vs new price first if it changed). Separate tickets: one tab per part, hardest-to-replace leg first. No browser plugin: give the direct links (`links.py`).
+Keep listening for the rest of the session: `wait_event.py --types book,start,rerank` (exit code 2 = timeout: run it again, always). On `start`: the user pressed **Search again** with new settings: read `~/.fair-fares/settings.json` and go back to step 3 (a new run). On `rerank`: the server already re-merged (Python server); with the Node server, copy `prefs` into the run's `settings.json` and run `merge_results.py` yourself. On `book`: for each request, open the same site in your browser plugin, re-search the same dates, re-select the exact flights (fare type and bags too), and stop at the passenger-details page. Write `RUN/booking_status.json` `{"message": ...}` so the page shows progress (old vs new price first if it changed). Separate tickets: one tab per part, hardest-to-replace leg first. No browser plugin: give the direct links (`links.py`).
